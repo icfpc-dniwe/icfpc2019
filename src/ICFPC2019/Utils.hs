@@ -8,7 +8,7 @@ instance Shape (V2 Int) where
   rank _ = 2
   zeroDim = 0
   unitDim = 1
-  intersectDim a b = min <$> a <*> b
+  intersectDim = min
   addDim = (+)
   size = foldr1 (*)
   sizeIsValid (V2 x y) = x * y >= 0
