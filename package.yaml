@@ -19,9 +19,16 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/githubuser/icfpc2019#readme>
 
+default-extensions:
+- RecordWildCards
+
 dependencies:
 - base >= 4.7 && < 5
-- dniwechan
+- containers
+- attoparsec
+- bytestring
+- repa
+- fast-downward
 
 library:
   source-dirs: src

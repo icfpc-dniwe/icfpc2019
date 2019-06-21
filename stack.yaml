@@ -34,12 +34,12 @@ resolver: lts-13.26
 #  - wai
 packages:
 - .
-- 3rdparty/dniwechan
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
-# extra-deps: []
+extra-deps:
+- fast-downward-0.1.1.0@sha256:fbdd35599cb8140970d9dd5512b6856fb725d44ec63b1d3831554ce2ecc14e76
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
