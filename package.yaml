@@ -32,7 +32,7 @@ dependencies:
 - fast-downward
 - linear
 - lens
-- dniwechan
+- vector
 
 library:
   source-dirs: src

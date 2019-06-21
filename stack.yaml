@@ -34,7 +34,6 @@ resolver: lts-13.26
 #  - wai
 packages:
 - .
-- 3rdparty/dniwechan
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.

@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import ICFPC2019.Map
 
 main :: IO ()
-main = someFunc
+main = runMain
