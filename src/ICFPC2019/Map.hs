@@ -45,6 +45,7 @@ genCells :: Map -> Problem (R.Array V I2 (Var Cell))
 genCells gameMap = mapM newVar gameMap
 
 move :: I2 -> Movement -> I2
+-- move idx mov | trace ("move " ++ show idx ++ " " ++ show mov) False = undefined
 move (V2 x y) MUp    = V2 x (y + 1)
 move (V2 x y) MRight = V2 (x + 1) y
 move (V2 x y) MDown  = V2 x (y - 1)
@@ -53,12 +54,13 @@ move (V2 x y) _      = V2 x y
 
 
 freeIdx :: Map -> [I2]
-freeIdx gameMap = filter (\idx -> (gameMap R.! idx) == Free) $ map (\idx -> R.fromIndex curShape idx) [0 .. (R.size $ curShape - 1)]
+freeIdx gameMap = filter (\idx -> (gameMap R.! idx) == Free) $ map (\idx -> R.fromIndex curShape idx) [0 .. (R.size curShape - 1)]
   where
     curShape = R.extent gameMap
 
 
 testCell :: R.Array V I2 (Var Cell) -> I2 -> Test
+-- testCell cells idx | trace ("testCell " ++ show idx) False = undefined
 testCell cells idx = cells R.! idx ?= Wrapped
 
 
@@ -74,6 +76,7 @@ problem = do
     moveRobot :: Movement -> Effect Movement
     moveRobot mov = do
       curLocation <- readVar robotLocation
+      writeVar (cells R.! curLocation) Wrapped
       let newLocation = move curLocation mov
       guard $ R.inShapeRange (V2 0 0) (curSize - 1) newLocation
       cellE <- readVar (cells R.! newLocation)
