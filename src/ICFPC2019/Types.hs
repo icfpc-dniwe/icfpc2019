@@ -1,6 +1,7 @@
 module ICFPC2019.Types where
 
 import Data.Set (Set)
+import Data.Map.Strict (Map)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Vector (V)
 
@@ -8,16 +9,12 @@ import ICFPC2019.Utils
 import ICFPC2019.Visualize
 
 data Cell = Obstacle
-          | Free { cellWrapped :: !Bool
-                 , cellObjects :: !(Set Booster)
-                 }
+          | Free
           deriving (Show, Eq)
 
 instance CharShow Cell where
   charShow Obstacle = '#'
-  charShow Free { .. }
-    | cellWrapped = ','
-    | otherwise = '.'
+  charShow Free = '.'
 
 data Booster = Extension
              | FastWheels
@@ -26,16 +23,19 @@ data Booster = Extension
              | Teleport
              deriving (Show, Eq, Ord)
 
-data Robot = Robot { robotPosition :: I2
-                   , robotManipulators :: Set I2
+data Robot = Robot { robotPosition :: !I2
+                   , robotManipulators :: !(Set I2)
                    }
              deriving (Show, Eq)
 
-type MapArr = Array V I2
+type MapArray a = Array V I2 a
 
-data Problem = Problem { problemMap :: MapArr Cell
-                       , problemRobot :: Robot
-                       , problemOffset :: I2
+data Problem = Problem { problemMap :: !(MapArray Cell)
+                       , problemOffset :: !I2
+
+                       , problemBoosters :: !(Map I2 (Set Booster))
+                       , problemUnwrapped :: !(Set I2)
+                       , problemRobot :: !Robot
                        }
              deriving (Show, Eq)
 
@@ -46,7 +46,7 @@ data Action = MUp
             | MNothing
             | MTurnRight
             | MTurnLeft
-            | MAttachManipulator I2
+            | MAttachManipulator !I2
             | MAttachWheels
             | MAttachDrill
             | MPlaceBeacon

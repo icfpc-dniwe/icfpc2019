@@ -43,6 +43,8 @@ library:
   ghc-options:
   - -Wall
   - -fno-warn-unused-matches
+  - -fno-warn-unused-top-binds
+  - -fno-warn-unused-imports
 
 executables:
   icfpc2019-exe:
@@ -51,6 +53,8 @@ executables:
     ghc-options:
     - -Wall
     - -fno-warn-unused-matches
+    - -fno-warn-unused-top-binds
+    - -fno-warn-unused-imports
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N

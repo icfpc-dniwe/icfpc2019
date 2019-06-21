@@ -1,13 +1,17 @@
 module Main where
 
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Builder as BB
 import System.Environment
+import System.IO
 import Data.Attoparsec.ByteString.Lazy (Result(..), parse)
+import qualified FastDownward as FD
 
 import ICFPC2019.Types
 import ICFPC2019.Raw
 import ICFPC2019.IO
 import ICFPC2019.Visualize
+import ICFPC2019.FastDownward
 
 main :: IO ()
 main = do
@@ -20,3 +24,11 @@ main = do
   print rawProb
   let prob = convertProblem rawProb
   putStrLn $ showPlane $ problemMap prob
+  res <- FD.runProblem (solveProblem prob)
+
+  solution <-
+    case res of
+      FD.Solved plan -> return $ map fromSimpleAction $ FD.totallyOrderedPlan plan
+      _ -> fail "Couldn't find a plan!"
+
+  BB.hPutBuilder stdout $ buildSolution solution

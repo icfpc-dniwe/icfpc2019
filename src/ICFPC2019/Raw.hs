@@ -4,12 +4,12 @@ module ICFPC2019.Raw
   , convertProblem
   ) where
 
-import Control.Monad
 import Control.Monad.ST
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Data.Set (Set)
 import qualified Data.Set as S
+import qualified Data.Map.Strict as M
 import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.Vector as R
 import Control.Lens
@@ -68,7 +68,9 @@ neighbours borders (V2 xSize ySize) p =
 convertProblem :: RawProblem -> Problem
 convertProblem (RawProblem { .. }) =
   Problem { problemMap
+          , problemUnwrapped
           , problemRobot
+          , problemBoosters
           , problemOffset = offset
           }
   
@@ -81,41 +83,39 @@ convertProblem (RawProblem { .. }) =
 
         offset = minP
         mapSize = maxP - minP
-        start@(V2 x0 y0) = rawPosition - offset
+        start = rawPosition - offset
+
+        manipulators = [ V2 0 0
+                       , V2 1 0
+                       , V2 1 1
+                       , V2 1 (-1)
+                       ]
 
         problemRobot = Robot { robotPosition = start
-                             , robotManipulators = S.fromList [ start
-                                                              , V2 (x0 + 1) y0
-                                                              , V2 (x0 + 1) (y0 + 1)
-                                                              , V2 (x0 + 1) (y0 - 1)
-                                                              ]
+                             , robotManipulators = S.fromList manipulators
                              }
 
-        problemMap :: R.Array R.V I2 Cell
-        problemMap = runST $ do
+        problemBoosters = M.fromListWith S.union $ map (\(booster, p) -> (p, S.singleton booster)) rawBoosters
+
+        (problemUnwrapped, problemMap) = runST $ do
           let borderPoints = foldr1 S.union $ map (foldr1 S.union . map (uncurry lineVecs) . rectangle) (rawMap : rawObstacles)
 
           cells <- VM.replicate (R.size mapSize) Obstacle
 
-          let fillCells [] = return ()
-              fillCells (p : queue) = do
+          let fillCells [] unwrapped = return unwrapped
+              fillCells (p : queue) unwrapped = do
                 val <- VM.read cells (R.toIndex mapSize p)
                 case val of
                   Obstacle -> do
-                    VM.write cells (R.toIndex mapSize p) $
-                      Free { cellWrapped = False
-                           , cellObjects = S.empty
-                           }
+                    VM.write cells (R.toIndex mapSize p) Free
                     let newQueue = neighbours borderPoints mapSize p
-                    fillCells (newQueue ++ queue)
-                  _ -> fillCells queue
+                        newUnwrapped = S.insert p unwrapped
+                    fillCells (newQueue ++ queue) newUnwrapped
+                  _ -> fillCells queue unwrapped
 
-          fillCells [start]
-
-          forM_ rawBoosters $ \(booster, p) -> do
-            let idx = R.toIndex mapSize (p - offset)
-            state <- VM.read cells idx
-            VM.write cells idx $ state { cellObjects = S.insert booster $ cellObjects state }
+          unwrapped <- fillCells [start] S.empty
+          
+          let finalUnwrapped = unwrapped S.\\ S.fromList (map (+ start) manipulators)
 
           finalCells <- V.unsafeFreeze cells
-          return $ R.fromVector mapSize finalCells
+          return (finalUnwrapped, R.fromVector mapSize finalCells)
