@@ -29,6 +29,8 @@ dependencies:
 - bytestring
 - repa
 - fast-downward
+- linear
+- dniwechan
 
 library:
   source-dirs: src
