@@ -2,14 +2,12 @@ module ICFPC2019.Map where
 
 --import Data.Set
 import Control.Monad
-import Linear.V3 (V3(..))
 import Linear.V2 (V2(..))
 import qualified FastDownward.Exec as Exec
 import FastDownward
 import qualified Data.Array.Repa as R
 import Data.Array.Repa.Repr.Vector
 import qualified Data.Array.Repa.Eval as RE
-import ICFPC2019.Types (I2)
 import ICFPC2019.Utils
 
 -- import Debug.Trace

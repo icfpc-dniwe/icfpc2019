@@ -10,7 +10,9 @@ import Data.Array.Repa.Repr.Vector (V)
 import qualified Data.Array.Repa.Repr.Vector as R
 import Data.Array.Repa.Shape
 
-instance Shape (V2 Int) where
+type I2 = V2 Int
+
+instance Shape I2 where
   rank _ = 2
   zeroDim = 0
   unitDim = 1
@@ -27,7 +29,7 @@ instance Shape (V2 Int) where
   listOfShape = toList
 
   shapeOfList [x, y] = V2 x y
-  shapeOfList _ = error "shapeOfList (V2 Int): invalid shape"
+  shapeOfList _ = error "shapeOfList (I2): invalid shape"
 
   deepSeq = seq
 

@@ -3,11 +3,9 @@ module ICFPC2019.Types where
 import Data.Set (Set)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Vector (V)
-import Linear.V2
   
 import ICFPC2019.Utils
-
-type I2 = V2 Int
+import ICFPC2019.Visualize
 
 data Cell = Obstacle
           | Free { cellWrapped :: !Bool
@@ -15,11 +13,17 @@ data Cell = Obstacle
                  }
           deriving (Show, Eq)
 
+instance CharShow Cell where
+  charShow Obstacle = '#'
+  charShow Free { .. }
+    | cellWrapped = ','
+    | otherwise = '.'
+
 data Booster = Extension
              | FastWheels
              | Drill
              | Mysterious
-             deriving (Show, Eq)
+             deriving (Show, Eq, Ord)
 
 data Robot = Robot { robotPosition :: I2
                    , robotManipulators :: Set I2
