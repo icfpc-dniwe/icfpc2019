@@ -23,6 +23,7 @@ data Booster = Extension
              | FastWheels
              | Drill
              | Mysterious
+             | Teleport
              deriving (Show, Eq, Ord)
 
 data Robot = Robot { robotPosition :: I2
@@ -48,4 +49,6 @@ data Action = MUp
             | MAttachManipulator I2
             | MAttachWheels
             | MAttachDrill
+            | MPlaceBeacon
+            | MTeleport I2
             deriving (Show, Eq, Ord)

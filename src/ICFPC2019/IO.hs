@@ -31,6 +31,7 @@ booster =
   <|> (char 'F' $> FastWheels)
   <|> (char 'L' $> Drill)
   <|> (char 'X' $> Mysterious)
+  <|> (char 'R' $> Teleport)
 
 boosterLocation :: Parser (Booster, I2)
 boosterLocation = (,) <$> booster <*> point
@@ -63,6 +64,8 @@ buildAction MTurnLeft = BB.char7 'Q'
 buildAction (MAttachManipulator (V2 dx dy)) = BB.byteString "B(" <> BB.intDec dx <> BB.char7 ',' <> BB.intDec dy <> BB.char7 ')'
 buildAction MAttachWheels = BB.char7 'F'
 buildAction MAttachDrill = BB.char7 'L'
+buildAction MPlaceBeacon = BB.char7 'R'
+buildAction (MTeleport (V2 x y)) = BB.byteString "T(" <> BB.intDec x <> BB.char7 ',' <> BB.intDec y <> BB.char7 ')'
 
 buildSolution :: [Action] -> BB.Builder
 buildSolution = mconcat . map buildAction 
