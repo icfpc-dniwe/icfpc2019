@@ -12,6 +12,8 @@ import qualified Data.Array.Repa.Eval as RE
 import ICFPC2019.Types (I2)
 import ICFPC2019.Utils
 
+import Debug.Trace
+
 data Cell = Wrapped
           | Free
           | Obstacle
@@ -32,12 +34,14 @@ data Booster = Extension
 type Map = R.Array V I2 Cell
 
 defaultMap :: Map
-defaultMap = RE.fromList (V2 3 3) [ Free, Free, Free
+defaultMap = RE.fromList (V2 3 4) [ Free, Free, Free
+                                  , Free, Obstacle, Free
                                   , Free, Obstacle, Free
                                   , Free, Free, Free
                                   ]
 
 canMove :: I2 -> I2 -> Movement -> Bool
+canMove i1 i2 mov | trace ("canMove " ++ show i1 ++ " vs " ++ show i2 ++ " on " ++ show mov) False = undefined
 canMove _                (V2 x y) MLeft  | x <= 0    = False
 canMove _                (V2 x y) MDown  | y <= 0    = False
 canMove (V2 xMax yMax) (V2 x y) MRight   | x >= xMax = False
@@ -57,9 +61,15 @@ move (V2 x y) _      = V2 x y
 
 
 freeIdx :: Map -> [I2]
-freeIdx gameMap = filter (\idx -> (gameMap R.! idx) == Free) $ map (\idx -> R.fromIndex curShape idx) [0 .. R.size $ curShape]
+freeIdx gameMap | trace ("freeIdx " ++ show (R.extent gameMap) ++ " \n> " ++ show gameMap ++ "\n| " ++ show (R.size $ R.extent gameMap)) False = undefined
+freeIdx gameMap = filter (\idx -> (gameMap R.! idx) == Free) $ map (\idx -> R.fromIndex curShape idx) [0 .. (R.size $ curShape - 1)]
   where
     curShape = R.extent gameMap
+
+
+testCell :: R.Array V I2 (Var Cell) -> I2 -> Test
+testCell cells idx | trace ("testCell " ++ show idx ++ " | " ++ show (R.extent cells)) False = undefined
+testCell cells idx = cells R.! idx ?= Wrapped
 
 
 problem :: Problem (SolveResult Movement)
@@ -74,19 +84,24 @@ problem = do
     moveRobot :: Movement -> Effect Movement
     moveRobot mov = do
       curLocation <- readVar robotLocation
+      traceM $ "moveR " ++ show curLocation ++ " " ++ show mov
       guard $ canMove curSize curLocation mov
+      traceM $ "g1 " ++ show curLocation ++ " " ++ show mov
       let newLocation = move curLocation mov
+      traceM $ "g1.5 " ++ show curLocation ++ " " ++ show mov ++ " " ++ show newLocation ++ " " ++ show (R.extent cells)
       cellE <- readVar (cells R.! newLocation)
+      traceM $ "g1.75 " ++ show curLocation ++ " " ++ show mov ++ " " ++ show newLocation ++ " " ++ show cellE
       guard $ cellE /= Obstacle
+      traceM $ "g2 " ++ show curLocation ++ " " ++ show mov
       writeVar robotLocation newLocation
       writeVar (cells R.! newLocation) Wrapped
+      traceM $ "g2.5 " ++ show curLocation ++ " " ++ show mov
       return mov
 
   solve
     cfg
-    ( [moveRobot mov | mov <- [MUp .. MNothing]]
-    )
-    $ map (\idx -> cells R.! idx ?= Wrapped) $ freeIdx currentMap
+    [moveRobot mov | mov <- [MUp .. MNothing]]
+    $ map (testCell cells) $ freeIdx currentMap
 
 
 runMain :: IO ()
