@@ -15,6 +15,22 @@ import ICFPC2019.FastDownward
 
 import qualified ICFPC2019.Solver.AStar as SA
 
+solveFD :: Problem -> ProblemState -> IO [Action]
+solveFD prob state = do
+  res <- FD.runProblem (solveProblem prob state)
+  
+  case res of
+    FD.Solved plan -> return $ map fromSimpleAction $ FD.totallyOrderedPlan plan
+    _ -> fail "Couldn't find a plan!"
+
+solveSA :: Problem -> ProblemState -> IO [Action]
+solveSA prob state = do
+  let res = SA.solve prob state
+
+  case res of
+    Just plan -> return $ map snd plan
+    _ -> fail "Couldn't find a plan!"
+
 main :: IO ()
 main = do
   [path] <- getArgs
@@ -23,22 +39,10 @@ main = do
     case parse rawProblem input of
       Done _ r -> return r
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
-  print rawProb
+  hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
-  putStrLn $ showPlane $ problemMap prob
---  res <- FD.runProblem (solveProblem prob state)
---
---  solution <-
---    case res of
---      FD.Solved plan -> return $ map fromSimpleAction $ FD.totallyOrderedPlan plan
---      _ -> fail "Couldn't find a plan!"
-
-  let res = SA.solve prob state
-
-  solution <-
-    case res of
-      Just plan -> return $ map snd plan
-      _ -> fail "Couldn't find a plan!"
+  hPutStrLn stderr $ showPlane $ problemMap prob
+  solution <- solveFD prob state
 
   BB.hPutBuilder stdout $ buildSolution solution
   putStrLn ""
