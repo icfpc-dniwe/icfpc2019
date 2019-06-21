@@ -1,0 +1,3 @@
+[submodule "3rdparty/dniwechan"]
+	path = 3rdparty/dniwechan
+	url = git@abbradar.moe:dniwechan
