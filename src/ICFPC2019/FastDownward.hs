@@ -75,15 +75,17 @@ solveProblem (Problem {..}) = do
   robotLocation <- newVar (V2 0 0)
 
   let
+    checkRange = R.inShapeRange (V2 0 0) (curSize - 1)
+
     moveRobot :: SimpleAction -> Effect SimpleAction
     moveRobot mov = do
       curLocation <- readVar robotLocation
       let newLocation = move curLocation mov
-      guard $ R.inShapeRange (V2 0 0) (curSize - 1) newLocation
+      guard $ checkRange newLocation
       cellE <- readVar (cells R.! newLocation)
       guard $ cellE /= SimpleObstacle
-      forM_ (robotManipulators problemRobot) $ \manip -> do
-        writeVar (cells R.! (curLocation + manip)) SimpleWrapped
+      forM_ (filter checkRange $ map (curLocation +) $ S.toList $ robotManipulators problemRobot) $ \wrapped -> do
+        writeVar (cells R.! wrapped) SimpleWrapped
       writeVar robotLocation newLocation
       return mov
 

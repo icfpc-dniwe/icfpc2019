@@ -32,3 +32,4 @@ main = do
       _ -> fail "Couldn't find a plan!"
 
   BB.hPutBuilder stdout $ buildSolution solution
+  putStrLn ""
