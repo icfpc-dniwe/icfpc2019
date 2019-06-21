@@ -31,12 +31,6 @@ data Booster = Extension
 
 type Map = R.Array V I2 Cell
 
-mapMArray :: (Monad m, R.Source r a, R.Shape sh)  => (a -> m b) -> R.Array r sh a -> m (R.Array R.D sh b)
-mapMArray f a = do
-    l <- mapM f . R.toList $ a
-    return $ R.fromFunction sh (\i -> l !! R.toIndex sh i)
-  where sh = R.extent a
-
 defaultMap :: Map
 defaultMap = RE.fromList (V2 3 3) [ Free, Free, Free
                                   , Free, Obstacle, Free
@@ -51,8 +45,8 @@ canMove (V2 xMax yMax) (V2 x y) MUp      | y >= yMax = False
 canMove _              _        _                    = True
 
 
-genCells :: Map -> Problem (R.Array R.D I2 (Var Cell))
-genCells gameMap = mapMArray newVar gameMap
+genCells :: Map -> Problem (R.Array V I2 (Var Cell))
+genCells gameMap = mapM newVar gameMap
 
 move :: I2 -> Movement -> I2
 move (V2 x y) MUp    = V2 x (y + 1)
