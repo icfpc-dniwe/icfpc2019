@@ -23,13 +23,16 @@ data Booster = Extension
              | Teleport
              deriving (Show, Eq, Ord)
 
+type MapArray a = Array V I2 a
+
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
                    , robotBeacons :: !(Set I2)
+                   , robotDrillLeft :: !Int
+                   , robotWheelsLeft :: !Int
+                   , robotBeaconsLeft :: !Int
                    }
              deriving (Show, Eq)
-
-type MapArray a = Array V I2 a
 
 data Problem = Problem { problemMap :: !(MapArray Cell)
                        , problemOffset :: !I2
