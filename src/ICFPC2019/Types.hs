@@ -54,6 +54,7 @@ data Problem = Problem { problemMap :: !(MapArray Cell)
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
+                                 , problemTurn :: !Int
                                  }
                   deriving (Show, Eq, Ord, Generic)
 
