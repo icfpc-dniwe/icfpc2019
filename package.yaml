@@ -24,6 +24,7 @@ default-extensions:
 - NamedFieldPuns
 - FlexibleInstances
 - ScopedTypeVariables
+- OverloadedStrings
 
 dependencies:
 - base >= 4.7 && < 5

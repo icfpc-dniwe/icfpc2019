@@ -16,6 +16,9 @@ import Linear.V2
 
 import ICFPC2019.Types
 import ICFPC2019.Utils
+import ICFPC2019.Visualize
+
+import Debug.Trace
  
 type RectilinearPoly = [I2]
 
@@ -44,6 +47,11 @@ data BorderCell = BEmpty
                 | BBorder
                 deriving (Show, Eq)
 
+instance CharShow BorderCell where
+  charShow BEmpty = '.'
+  charShow BBorder = '#'
+  charShow BVisited = ','
+
 neighbours :: (Ord a, Num a) => V2 a -> V2 a -> [V2 a]
 neighbours (V2 xSize ySize) (V2 x y) = [ V2 nx ny
                                        | dx <- [-1, 0, 1]
@@ -69,14 +77,16 @@ convertProblem (RawProblem { .. }) =
           , problemOffset = offset
           }
   
-  where minX = minimum (map (^. _x) rawMap) - 1
-        maxX = maximum (map (^. _x) rawMap) - 1
-        minY = minimum (map (^. _y) rawMap) + 1
-        maxY = maximum (map (^. _y) rawMap) + 1
+  where minX = minimum (map (^. _x) rawMap)
+        maxX = maximum (map (^. _x) rawMap)
+        minP = V2 minX minY
+        minY = minimum (map (^. _y) rawMap)
+        maxY = maximum (map (^. _y) rawMap)
+        maxP = V2 maxX maxY
 
-        offset = V2 minX minY
-        mapSize = V2 (maxX - minX) (maxY - minY)
-        bordersSize = V2 (maxX - minX + 1) (maxY - minY + 1)
+        offset = minP
+        mapSize = maxP - minP
+        bordersSize = mapSize + 1
         start@(V2 x0 y0) = rawPosition - offset
 
         problemRobot = Robot { robotPosition = start
@@ -94,6 +104,9 @@ convertProblem (RawProblem { .. }) =
           let borderPoints = concatMap (concatMap (uncurry linePoints) . rectangle) (rawMap : rawObstacles)
           forM_ borderPoints $ \p -> do
             VM.write borders (R.toIndex bordersSize (p - offset)) BBorder
+
+          plane <- showPlane <$> R.fromVector bordersSize <$> V.freeze borders
+          traceM plane
 
           let fillBorders [] = return ()
               fillBorders (p : queue) = do

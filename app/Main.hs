@@ -1,6 +1,22 @@
 module Main where
 
-import ICFPC2019.Map
+import qualified Data.ByteString.Lazy as BL
+import System.Environment
+import Data.Attoparsec.ByteString.Lazy (Result(..), parse)
+
+import ICFPC2019.Types
+import ICFPC2019.Raw
+import ICFPC2019.IO
+import ICFPC2019.Visualize
 
 main :: IO ()
-main = runMain
+main = do
+  [path] <- getArgs
+  input <- BL.readFile path
+  rawProblem <-
+    case parse problem input of
+      Done _ r -> return r
+      Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
+  print rawProblem
+  let prob = convertProblem rawProblem
+  putStrLn $ showPlane $ problemMap prob
