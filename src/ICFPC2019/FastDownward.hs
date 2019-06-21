@@ -66,8 +66,8 @@ isFreeCell _          = False
 testCell :: MapArray (Maybe (Var SimpleCell)) -> I2 -> Test
 testCell cells idx = fromJust (cells R.! idx) ?= SimpleWrapped
 
-solveProblem :: Problem -> FD.Problem (SolveResult SimpleAction)
-solveProblem (Problem {..}) = do
+solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult SimpleAction)
+solveProblem (Problem {..}) ProblemState {..} = do
   let currentMap = simplifyMap problemUnwrapped problemMap
   let curSize = R.extent currentMap
   cells <- genCells currentMap

@@ -9,7 +9,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Data.Set (Set)
 import qualified Data.Set as S
-import qualified Data.Map.Strict as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.Vector as R
 import Control.Lens
@@ -65,15 +65,16 @@ neighbours borders (V2 xSize ySize) p =
         stepBorder (V2 0    (-1)) (V2 x y) = (V2 x       y       , V2 (x + 1) y)
         stepBorder _ _ = error "stepBorder: invalid step"
 
-convertProblem :: RawProblem -> Problem
+convertProblem :: RawProblem -> (Problem, ProblemState)
 convertProblem (RawProblem { .. }) =
-  Problem { problemMap
-          , problemUnwrapped
-          , problemRobot
-          , problemBoosters
-          , problemOffset = offset
-          }
-  
+  ( Problem { problemMap
+            , problemOffset = offset
+            }
+  , ProblemState { problemUnwrapped
+                 , problemRobot
+                 , problemBoosters
+                 }
+  )
   where minX = minimum (map (^. _x) rawMap)
         maxX = maximum (map (^. _x) rawMap)
         minP = V2 minX minY

@@ -1,9 +1,12 @@
 module ICFPC2019.Types where
 
 import Data.Set (Set)
-import Data.Map.Strict (Map)
+import qualified Data.Set as S
+import Data.HashMap.Strict (HashMap)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Vector (V)
+import Data.Hashable (Hashable, hashWithSalt)
+import GHC.Generics (Generic)
 
 import ICFPC2019.Utils
 import ICFPC2019.Visualize
@@ -21,24 +24,42 @@ data Booster = Extension
              | Drill
              | Mysterious
              | Teleport
-             deriving (Show, Eq, Ord)
+             deriving (Show, Eq, Ord, Generic)
 
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
                    , robotBeacons :: !(Set I2)
                    }
-             deriving (Show, Eq)
+             deriving (Show, Eq, Generic)
 
 type MapArray a = Array V I2 a
 
+--data Problem = Problem { problemMap :: !(MapArray Cell)
+--                       , problemOffset :: !I2
+--
+--                       , problemBoosters :: !(Map I2 (Set Booster))
+--                       , problemUnwrapped :: !(Set I2)
+--                       , problemRobot :: !Robot
+--                       }
+--             deriving (Show, Eq)
+
 data Problem = Problem { problemMap :: !(MapArray Cell)
                        , problemOffset :: !I2
-
-                       , problemBoosters :: !(Map I2 (Set Booster))
-                       , problemUnwrapped :: !(Set I2)
-                       , problemRobot :: !Robot
                        }
              deriving (Show, Eq)
+
+data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
+                                 , problemUnwrapped :: !(Set I2)
+                                 , problemRobot :: !Robot
+                                 }
+                  deriving (Show, Eq, Generic)
+
+instance Hashable ProblemState where
+instance Hashable Booster where
+instance Hashable Robot where
+
+instance (Hashable a) => Hashable (Set a) where
+  hashWithSalt salt set = hashWithSalt salt $ S.toList set
 
 data Action = MUp
             | MDown

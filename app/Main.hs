@@ -22,9 +22,9 @@ main = do
       Done _ r -> return r
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
   print rawProb
-  let prob = convertProblem rawProb
+  let (prob, state) = convertProblem rawProb
   putStrLn $ showPlane $ problemMap prob
-  res <- FD.runProblem (solveProblem prob)
+  res <- FD.runProblem (solveProblem prob state)
 
   solution <-
     case res of
