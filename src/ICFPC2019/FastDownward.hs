@@ -4,6 +4,7 @@ module ICFPC2019.FastDownward
   , fromSimpleAction
   ) where
 
+import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as S
 import Control.Monad
@@ -19,7 +20,6 @@ import ICFPC2019.Utils
 
 data SimpleCell = SimpleWrapped
                 | SimpleFree
-                | SimpleObstacle
                 deriving (Show, Eq, Ord)
 
 data SimpleAction = SMUp
@@ -36,19 +36,20 @@ fromSimpleAction SMDown = MDown
 fromSimpleAction SMLeft = MLeft
 fromSimpleAction SMNothing = MNothing
 
-simplifyMap :: Set I2 -> MapArray Cell -> MapArray SimpleCell
+simplifyMap :: Set I2 -> MapArray Cell -> MapArray (Maybe SimpleCell)
 simplifyMap unwrapped arr = R.computeS $ R.fromFunction (R.extent arr) toSimple
   where toSimple i
-          | i `S.member` unwrapped = SimpleFree
+          | i `S.member` unwrapped = Just SimpleFree
           | otherwise =
             case val of
-              Free -> SimpleWrapped
-              Obstacle -> SimpleObstacle
+              Free -> Just SimpleWrapped
+              Obstacle -> Nothing
           where val = arr R.! i
 
-genCells :: MapArray SimpleCell -> FD.Problem (MapArray (Var SimpleCell))
-genCells gameMap = mapM newVar gameMap
-
+genCells :: MapArray (Maybe SimpleCell) -> FD.Problem (MapArray (Maybe (Var SimpleCell)))
+genCells gameMap = mapM makeOne gameMap
+  where makeOne Nothing = return Nothing
+        makeOne (Just c) = Just <$> newVar c
 
 move :: I2 -> SimpleAction -> I2
 -- move idx mov | trace ("move " ++ show idx ++ " " ++ show mov) False = undefined
@@ -62,17 +63,15 @@ isFreeCell :: SimpleCell -> Bool
 isFreeCell SimpleFree = True
 isFreeCell _          = False
 
-testCell :: MapArray (Var SimpleCell) -> I2 -> Test
--- testCell cells idx | trace ("testCell " ++ show idx) False = undefined
-testCell cells idx = cells R.! idx ?= SimpleWrapped
-
+testCell :: MapArray (Maybe (Var SimpleCell)) -> I2 -> Test
+testCell cells idx = fromJust (cells R.! idx) ?= SimpleWrapped
 
 solveProblem :: Problem -> FD.Problem (SolveResult SimpleAction)
 solveProblem (Problem {..}) = do
   let currentMap = simplifyMap problemUnwrapped problemMap
   let curSize = R.extent currentMap
   cells <- genCells currentMap
-  robotLocation <- newVar (V2 0 0)
+  robotLocation <- newVar $ robotPosition problemRobot
 
   let
     checkRange = R.inShapeRange (V2 0 0) (curSize - 1)
@@ -82,10 +81,11 @@ solveProblem (Problem {..}) = do
       curLocation <- readVar robotLocation
       let newLocation = move curLocation mov
       guard $ checkRange newLocation
-      cellE <- readVar (cells R.! newLocation)
-      guard $ cellE /= SimpleObstacle
+      guard $ isJust $ cells R.! newLocation
       forM_ (filter checkRange $ map (curLocation +) $ S.toList $ robotManipulators problemRobot) $ \wrapped -> do
-        writeVar (cells R.! wrapped) SimpleWrapped
+        case cells R.! wrapped of
+          Nothing -> return ()
+          Just c -> writeVar c SimpleWrapped
       writeVar robotLocation newLocation
       return mov
 
