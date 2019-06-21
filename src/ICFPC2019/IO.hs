@@ -23,7 +23,7 @@ point = do
   return $ V2 x y
 
 rectilinearPoly :: Parser RectilinearPoly
-rectilinearPoly = point `sepBy'` char ','
+rectilinearPoly = point `sepBy1'` char ','
 
 booster :: Parser Booster
 booster =
