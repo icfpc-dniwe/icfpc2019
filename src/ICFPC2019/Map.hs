@@ -46,6 +46,7 @@ simplifyMap = fmap toSimple
 genCells :: Map -> Problem (MapArr (Var SimpleCell))
 genCells gameMap = mapM newVar gameMap
 
+
 move :: I2 -> Action -> I2
 -- move idx mov | trace ("move " ++ show idx ++ " " ++ show mov) False = undefined
 move (V2 x y) MUp    = V2 x (y + 1)
