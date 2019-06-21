@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module ICFPC2019.Utils where
 
 import Data.Foldable
@@ -11,7 +13,7 @@ instance Shape (V2 Int) where
   intersectDim = min
   addDim = (+)
   size = foldr1 (*)
-  sizeIsValid (V2 x y) = x * y >= 0
+  sizeIsValid s = size s >= 0
   toIndex (V2 xSize ySize) (V2 x y) = y * xSize + x
   fromIndex (V2 xSize ySize) idx = V2 x y
     where (y, x) = idx `divMod` xSize
