@@ -34,13 +34,3 @@ getNeighbours problem@(Problem {..}) =
     , checkBoundaries problemMap newPos
     , checkObstacles problemMap newPos
   ]
-
-countWrapped :: Problem -> Problem -> Int
-countWrapped beginMap endMap = S.size $ endWrap S.\\ beginWrap
-  where
-    isWrapped Free {cellWrapped = True} = True
-    isWrapped _                         = False
-    findWrapped :: MapArr Cell -> S.Set I2
-    findWrapped gameMap = S.filter (\idx -> isWrapped $ gameMap ! idx) $ indexArray gameMap
-    beginWrap = findWrapped $ problemMap beginMap
-    endWrap = findWrapped $ problemMap endMap
