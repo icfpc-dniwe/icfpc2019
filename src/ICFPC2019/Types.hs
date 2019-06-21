@@ -46,4 +46,4 @@ data Action = MUp
             | MAttachManipulator I2
             | MAttachWheels
             | MAttachDrill
-  deriving (Show, Eq, Ord, Bounded, Enum)
+            deriving (Show, Eq, Ord)

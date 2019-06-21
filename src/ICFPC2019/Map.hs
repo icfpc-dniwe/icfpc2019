@@ -19,6 +19,9 @@ data SimpleCell = SimpleWrapped
                 | SimpleObstacle
                 deriving (Show, Eq, Ord)
 
+data SimpleAction = SMUp | SMRight | SMDown | SMLeft | SMNothing
+  deriving (Show, Eq, Ord, Bounded, Enum)
+
 type MapArr = R.Array V I2
 type Map = MapArr SimpleCell
 
@@ -44,13 +47,13 @@ genCells :: Map -> Problem (MapArr (Var SimpleCell))
 genCells gameMap = mapM newVar gameMap
 
 
-move :: I2 -> Action -> I2
+move :: I2 -> SimpleAction -> I2
 -- move idx mov | trace ("move " ++ show idx ++ " " ++ show mov) False = undefined
-move (V2 x y) MUp    = V2 x (y + 1)
-move (V2 x y) MRight = V2 (x + 1) y
-move (V2 x y) MDown  = V2 x (y - 1)
-move (V2 x y) MLeft  = V2 (x - 1) y
-move (V2 x y) _      = V2 x y
+move (V2 x y) SMUp    = V2 x (y + 1)
+move (V2 x y) SMRight = V2 (x + 1) y
+move (V2 x y) SMDown  = V2 x (y - 1)
+move (V2 x y) SMLeft  = V2 (x - 1) y
+move (V2 x y) _       = V2 x y
 
 isFreeCell :: SimpleCell -> Bool
 isFreeCell SimpleFree = True
@@ -67,7 +70,7 @@ testCell :: MapArr (Var SimpleCell) -> I2 -> Test
 testCell cells idx = cells R.! idx ?= SimpleWrapped
 
 
-problem :: Problem (SolveResult Action)
+problem :: Problem (SolveResult SimpleAction)
 problem = do
   let currentMap = simplifyMap $ defaultMap
   let curSize = R.extent currentMap
@@ -75,7 +78,7 @@ problem = do
   robotLocation <- newVar (V2 0 0)
 
   let
-    moveRobot :: Action -> Effect Action
+    moveRobot :: SimpleAction -> Effect SimpleAction
     moveRobot mov = do
       curLocation <- readVar robotLocation
       writeVar (cells R.! curLocation) SimpleWrapped
@@ -89,7 +92,7 @@ problem = do
 
   solve
     cfg
-    [moveRobot mov | mov <- [MUp .. MNothing]]
+    [moveRobot mov | mov <- [SMUp .. SMNothing]]
     $ map (testCell cells) $ freeIdx currentMap
 
 

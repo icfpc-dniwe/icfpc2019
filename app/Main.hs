@@ -13,10 +13,10 @@ main :: IO ()
 main = do
   [path] <- getArgs
   input <- BL.readFile path
-  rawProblem <-
-    case parse problem input of
+  rawProb <-
+    case parse rawProblem input of
       Done _ r -> return r
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
-  print rawProblem
-  let prob = convertProblem rawProblem
+  print rawProb
+  let prob = convertProblem rawProb
   putStrLn $ showPlane $ problemMap prob

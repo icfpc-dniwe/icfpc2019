@@ -7,7 +7,6 @@ import Data.Functor
 import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
 import Linear.V2
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Builder as BB
 
 import ICFPC2019.Types
@@ -54,15 +53,16 @@ rawProblem = do
   return RawProblem {..}
 
 buildAction :: Action -> BB.Builder
-buildAction MUp = char7 'W'
-buildAction MDown = char7 'S'
-buildAction MLeft = char7 'A'
-buildAction MRight = char7 'D'
-buildAction MNothing = char7 'Z'
-buildAction MTurnRight = char7 'E'
-buildAction MTurnLeft = char7 'Q'
-buildAction MAttachManipulator (V2 dx dy) = byteString "B(" <> intDec dx <> char7 ',' <> intDec dy <> char7 ')'
-buildAction MAttachWheels = char7 'F'
+buildAction MUp = BB.char7 'W'
+buildAction MDown = BB.char7 'S'
+buildAction MLeft = BB.char7 'A'
+buildAction MRight = BB.char7 'D'
+buildAction MNothing = BB.char7 'Z'
+buildAction MTurnRight = BB.char7 'E'
+buildAction MTurnLeft = BB.char7 'Q'
+buildAction (MAttachManipulator (V2 dx dy)) = BB.byteString "B(" <> BB.intDec dx <> BB.char7 ',' <> BB.intDec dy <> BB.char7 ')'
+buildAction MAttachWheels = BB.char7 'F'
+buildAction MAttachDrill = BB.char7 'L'
 
-buildSolution :: [Action] -> BL.ByteString
-buildSolution = 
+buildSolution :: [Action] -> BB.Builder
+buildSolution = mconcat . map buildAction 
