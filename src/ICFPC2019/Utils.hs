@@ -13,7 +13,7 @@ instance Shape (V2 Int) where
   size = foldr1 (*)
   sizeIsValid (V2 x y) = x * y >= 0
   toIndex (V2 xSize ySize) (V2 x y) = y * xSize + x
-  fromIndex (V2 xSize ySize) idx = V2 y x
+  fromIndex (V2 xSize ySize) idx = V2 x y
     where (y, x) = idx `divMod` xSize
   inShapeRange (V2 x1 y1) (V2 x2 y2) (V2 x y) =
     x >= x1 && x <= x2 &&
