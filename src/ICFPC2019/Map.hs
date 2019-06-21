@@ -22,7 +22,6 @@ data SimpleCell = SimpleWrapped
 data SimpleAction = SMUp | SMRight | SMDown | SMLeft | SMNothing
   deriving (Show, Eq, Ord, Bounded, Enum)
 
-type MapArr = R.Array V I2
 type Map = MapArr SimpleCell
 
 --defaultMap :: Map

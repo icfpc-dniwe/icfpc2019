@@ -36,6 +36,7 @@ dependencies:
 - linear
 - lens
 - vector
+- dniwechan
 
 library:
   source-dirs: src

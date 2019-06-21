@@ -3,7 +3,7 @@ module ICFPC2019.Types where
 import Data.Set (Set)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Vector (V)
-  
+
 import ICFPC2019.Utils
 import ICFPC2019.Visualize
 
@@ -30,7 +30,9 @@ data Robot = Robot { robotPosition :: I2
                    }
              deriving (Show, Eq)
 
-data Problem = Problem { problemMap :: Array V I2 Cell
+type MapArr = Array V I2
+
+data Problem = Problem { problemMap :: MapArr Cell
                        , problemRobot :: Robot
                        , problemOffset :: I2
                        }
