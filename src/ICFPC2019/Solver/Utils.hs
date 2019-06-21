@@ -19,9 +19,9 @@ checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 checkObstacles :: MapArray Cell -> I2 -> Bool
 checkObstacles gameMap pos = (gameMap R.! pos) /= Obstacle
 
-getNeighbours :: Problem -> [(Problem, Action)]
-getNeighbours problem@(Problem {..}) =
-  [ ( problem
+getNeighbours :: Problem -> ProblemState -> [(ProblemState, Action)]
+getNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
+  [ ( state
       { problemUnwrapped = foldr S.delete problemUnwrapped newWrapped
       , problemRobot = problemRobot { robotPosition = newPos }
       }
@@ -34,3 +34,12 @@ getNeighbours problem@(Problem {..}) =
     , checkBoundaries problemMap newPos
     , checkObstacles problemMap newPos
   ]
+
+genFinish :: ProblemState -> ProblemState
+genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
+
+diffWrapped :: ProblemState -> ProblemState -> Int
+diffWrapped startState endState = S.size $ startUnWrapped S.\\ endUnWrapped
+  where
+    startUnWrapped = problemUnwrapped startState
+    endUnWrapped = problemUnwrapped endState

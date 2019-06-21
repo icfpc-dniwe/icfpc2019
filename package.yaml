@@ -25,10 +25,12 @@ default-extensions:
 - FlexibleInstances
 - ScopedTypeVariables
 - OverloadedStrings
+- DeriveGeneric
 
 dependencies:
 - base >= 4.7 && < 5
 - containers
+- unordered-containers
 - attoparsec
 - bytestring
 - repa
@@ -37,6 +39,7 @@ dependencies:
 - lens
 - vector
 - dniwechan
+- hashable
 
 library:
   source-dirs: src
