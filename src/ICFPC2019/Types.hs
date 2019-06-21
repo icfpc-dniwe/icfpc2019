@@ -35,9 +35,7 @@ data Robot = Robot { robotPosition :: !I2
                    , robotWheelsLeft :: !Int
                    , robotBeaconsLeft :: !Int
                    }
-             deriving (Show, Eq, Generic)
-
-type MapArray a = Array V I2 a
+             deriving (Show, Eq, Ord, Generic)
 
 --data Problem = Problem { problemMap :: !(MapArray Cell)
 --                       , problemOffset :: !I2
@@ -57,7 +55,7 @@ data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster)
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
                                  }
-                  deriving (Show, Eq, Generic)
+                  deriving (Show, Eq, Ord, Generic)
 
 instance Hashable ProblemState where
 instance Hashable Booster where
