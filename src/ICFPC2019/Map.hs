@@ -59,7 +59,7 @@ isFreeCell SimpleFree = True
 isFreeCell _          = False
 
 freeIdx :: Map -> [I2]
-freeIdx gameMap = filter (\idx -> isFreeCell $ gameMap R.! idx) $ map (\idx -> R.fromIndex curShape idx) [0 .. (R.size curShape - 1)]
+freeIdx gameMap = filter (\idx -> isFreeCell $ gameMap R.! idx) $ map (R.fromIndex curShape) [0 .. (R.size curShape - 1)]
   where
     curShape = R.extent gameMap
 

@@ -3,6 +3,7 @@
 module ICFPC2019.Utils where
 
 import qualified Data.Vector as V
+import qualified Data.Set as S
 import Data.Foldable
 import Linear.V2
 import qualified Data.Array.Repa as R
@@ -48,3 +49,8 @@ instance Shape sh => Foldable (R.Array V sh) where
 
 instance Shape sh => Traversable (R.Array V sh) where
   traverse f = wrapVectorRepaM (traverse f)
+
+indexArray :: (R.Source v a) => R.Array v I2 a -> S.Set I2
+indexArray arr = S.fromList $ map (R.fromIndex curShape) [0 .. (R.size curShape) - 1]
+  where
+    curShape = R.extent arr
