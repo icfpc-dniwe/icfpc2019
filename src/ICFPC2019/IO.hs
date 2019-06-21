@@ -1,11 +1,14 @@
 module ICFPC2019.IO
-  ( problem
+  ( rawProblem
+  , buildSolution
   ) where
 
 import Data.Functor
 import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
 import Linear.V2
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Builder as BB
 
 import ICFPC2019.Types
 import ICFPC2019.Utils
@@ -39,8 +42,8 @@ boosters = boosterLocation `sepBy'` char ';'
 obstacles :: Parser [RectilinearPoly]
 obstacles = rectilinearPoly `sepBy'` char ';'
 
-problem :: Parser RawProblem
-problem = do
+rawProblem :: Parser RawProblem
+rawProblem = do
   rawMap <- rectilinearPoly
   _ <- char '#'
   rawPosition <- point
@@ -49,3 +52,17 @@ problem = do
   _ <- char '#'
   rawBoosters <- boosters
   return RawProblem {..}
+
+buildAction :: Action -> BB.Builder
+buildAction MUp = char7 'W'
+buildAction MDown = char7 'S'
+buildAction MLeft = char7 'A'
+buildAction MRight = char7 'D'
+buildAction MNothing = char7 'Z'
+buildAction MTurnRight = char7 'E'
+buildAction MTurnLeft = char7 'Q'
+buildAction MAttachManipulator (V2 dx dy) = byteString "B(" <> intDec dx <> char7 ',' <> intDec dy <> char7 ')'
+buildAction MAttachWheels = char7 'F'
+
+buildSolution :: [Action] -> BL.ByteString
+buildSolution = 

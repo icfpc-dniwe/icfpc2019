@@ -19,9 +19,6 @@ data SimpleCell = SimpleWrapped
                 | SimpleObstacle
                 deriving (Show, Eq, Ord)
 
-data Action = MUp | MRight | MDown | MLeft | MNothing
-  deriving (Show, Eq, Ord, Bounded, Enum)
-
 type MapArr = R.Array V I2
 type Map = MapArr SimpleCell
 

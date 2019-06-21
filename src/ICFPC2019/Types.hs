@@ -35,3 +35,15 @@ data Problem = Problem { problemMap :: Array V I2 Cell
                        , problemOffset :: I2
                        }
              deriving (Show, Eq)
+
+data Action = MUp
+            | MDown
+            | MLeft
+            | MRight
+            | MNothing
+            | MTurnRight
+            | MTurnLeft
+            | MAttachManipulator I2
+            | MAttachWheels
+            | MAttachDrill
+  deriving (Show, Eq, Ord, Bounded, Enum)
