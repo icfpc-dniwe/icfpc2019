@@ -25,6 +25,7 @@ data Booster = Extension
 
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
+                   , robotBeacons :: !(Set I2)
                    }
              deriving (Show, Eq)
 
