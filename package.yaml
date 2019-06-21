@@ -25,6 +25,7 @@ default-extensions:
 - FlexibleInstances
 - ScopedTypeVariables
 - OverloadedStrings
+- DeriveGeneric
 
 dependencies:
 - base >= 4.7 && < 5
@@ -38,6 +39,7 @@ dependencies:
 - lens
 - vector
 - dniwechan
+- hashable
 
 library:
   source-dirs: src
