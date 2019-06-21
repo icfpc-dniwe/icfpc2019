@@ -2,8 +2,12 @@
 
 module ICFPC2019.Utils where
 
+import qualified Data.Vector as V
 import Data.Foldable
 import Linear.V2
+import qualified Data.Array.Repa as R
+import Data.Array.Repa.Repr.Vector (V)
+import qualified Data.Array.Repa.Repr.Vector as R
 import Data.Array.Repa.Shape
 
 instance Shape (V2 Int) where
@@ -26,3 +30,19 @@ instance Shape (V2 Int) where
   shapeOfList _ = error "shapeOfList (V2 Int): invalid shape"
 
   deepSeq = seq
+
+wrapVectorRepa :: Shape sh => (V.Vector a -> V.Vector b) -> R.Array V sh a -> R.Array V sh b
+wrapVectorRepa f arr = R.fromVector (R.extent arr) $ f $ R.toVector arr
+
+wrapVectorRepaM :: (Applicative f, Shape sh) => (V.Vector a -> f (V.Vector b)) -> R.Array V sh a -> f (R.Array V sh b)
+wrapVectorRepaM f arr = fmap (R.fromVector (R.extent arr)) $ f $ R.toVector arr
+
+instance Shape sh => Functor (R.Array V sh) where
+  fmap f = wrapVectorRepa (fmap f)
+
+instance Shape sh => Foldable (R.Array V sh) where
+  foldMap f arr = foldMap f $ R.toVector arr
+  foldr f acc arr = foldr f acc $ R.toVector arr
+
+instance Shape sh => Traversable (R.Array V sh) where
+  traverse f = wrapVectorRepaM (traverse f)
