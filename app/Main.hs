@@ -52,6 +52,8 @@ main = do
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
   solution <- solveSB prob state
+  --solution <- solveFD prob state
+  hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
 
   BB.hPutBuilder stdout $ buildSolution solution
   putStrLn ""
