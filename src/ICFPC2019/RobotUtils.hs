@@ -1,5 +1,22 @@
 module ICFPC2019.RobotUtils
+<<<<<<< HEAD
   where
+=======
+  ( move
+  , rot
+  , speed
+  , checkBoundaries
+  , checkObstacles
+  , isValidRobot
+  , manipulatorExtensionLocations
+  , validManipulators
+  , applyAction
+  , applyPick
+  , applyOrientation
+  , rotateLeft
+  , rotateRight
+  ) where
+>>>>>>> cf46e0999a5800e82d8d385a450d56be590e5d1e
 
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -48,6 +65,10 @@ checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 checkObstacles :: MapArray -> I2 -> Bool
 checkObstacles gameMap pos = gameMap R.! pos
 
+isValidRobot :: Problem -> Robot -> Bool
+isValidRobot Problem{..} Robot{..} = checkBoundaries problemMap robotPosition &&
+                                     checkObstacles problemMap robotPosition
+
 sign :: Float -> Int
 sign v
     | abs v < 1e-10 = 0
@@ -68,8 +89,8 @@ segmentIntersectsLine a b (V2 xc yc) (V2 xd yd) =
         ab = b - a :: V2 Float
         ad = d - a :: V2 Float
         ac = c - a :: V2 Float
-        acxab = (crossZ ac ab) :: Float
-        adxab = (crossZ ad ab) :: Float
+        acxab = crossZ ac ab :: Float
+        adxab = crossZ ad ab :: Float
     in sign acxab /= sign adxab
 
 cellsInBB :: I2 -> I2 -> [I2]
@@ -166,11 +187,11 @@ applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
     robotUnspentManips = max 0 $ robotUnspentManips r - 1
 }
 applyAction' r MAttachWheels = decrementBoosters $ r {
-    robotWheelsLeft = max 50 $ robotWheelsLeft r,
+    robotWheelsLeft = max 51 $ robotWheelsLeft r,
     robotUnspentWheels = max 0 $ robotUnspentWheels r - 1
 }
 applyAction' r MAttachDrill = decrementBoosters $ r {
-    robotDrillLeft = max 30 $ robotDrillLeft r,
+    robotDrillLeft = max 31 $ robotDrillLeft r,
     robotUnspentDrills = max 0 $ robotUnspentDrills r - 1
 }
 applyAction' r MPlaceBeacon = decrementBoosters $ r {
@@ -207,7 +228,7 @@ applyValidMoveAction :: MapArray -> ProblemState -> Action -> Robot -> Maybe Rob
 applyValidMoveAction map_ state action r = 
     let newRobot = applyValidMoveAction' map_ state action (speed r) r
     in
-        if (robotPosition newRobot /= robotPosition r)
+        if robotPosition newRobot /= robotPosition r
             then Just $ decrementBoosters newRobot
             else Nothing
 

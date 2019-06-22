@@ -12,6 +12,7 @@ import ICFPC2019.Raw
 import ICFPC2019.IO
 import ICFPC2019.Visualize
 import ICFPC2019.FastDownward
+import ICFPC2019.Skeletonize
 
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
@@ -56,6 +57,8 @@ solveSD prob state = do
 
 main :: IO ()
 main = do
+  path <- getEnv "PATH"
+  putStrLn ("PATH=" ++ path)
   [path] <- getArgs
   input <- BL.readFile path
   rawProb <-
@@ -65,6 +68,9 @@ main = do
   hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
+  clusters <- getRawClusters $ problemMap prob
+  hPutStrLn stderr $ show clusters
+
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)

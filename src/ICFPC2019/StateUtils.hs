@@ -9,7 +9,7 @@ import ICFPC2019.Types
 import ICFPC2019.RobotUtils
 
 collectBooster :: Problem -> ProblemState -> Booster -> ProblemState
-collectBooster problem@(Problem {..}) state@(ProblemState {..}) bst =
+collectBooster problem@Problem {..} state@ProblemState {..} bst =
   let robot = problemRobot
       map_ = problemMap
       executeAction action =
@@ -32,13 +32,13 @@ collectBoosters' problem (h:t) s = collectBoosters' problem t $ collectBooster p
 
 collectBoosters :: Problem -> [I2] -> ProblemState -> ProblemState
 collectBoosters _ [] state = state
-collectBoosters problem@(Problem {..}) (h:t) state@(ProblemState {..}) = collectBoosters problem t $
+collectBoosters problem@Problem {..} (h:t) state@ProblemState {..} = collectBoosters problem t $
   let robot = problemRobot
       pos = h
       collectAt pos st = collectBoosters' problem (S.toList $ problemBoosters M.! pos) st
       removeAt pos st = st { problemBoosters = M.delete pos problemBoosters }
   in
-    if (M.member pos problemBoosters)
+    if M.member pos problemBoosters
       then removeAt pos $ collectAt pos state
       else state
 
@@ -54,10 +54,11 @@ cellsOnMoveLine (V2 x0 y0) (V2 x1 y1)
 changeState :: Problem -> ProblemState -> Action -> Maybe ProblemState
 changeState prob@Problem{..} state@ProblemState{..} act =
   case applyAction problemRobot problemMap state act of
-    Just newRobot -> Just $ newState newRobot
+    Just newRobot -> if isValidRobot prob newRobot
+                     then Just $ newState newRobot
+                     else Nothing
       where
-        startRobot = problemRobot
-        moveSpanCells r = cellsOnMoveLine (robotPosition startRobot) (robotPosition r)
+        moveSpanCells r = cellsOnMoveLine (robotPosition problemRobot) (robotPosition r)
         validManips r pos = validManipulators problemMap pos (robotManipulators r)
         validManipsTotal r = S.toList $ foldr1 S.union $ validManips r <$> moveSpanCells r
         newWrapped r = map (+ robotPosition r) $ validManipsTotal r

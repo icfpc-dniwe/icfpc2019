@@ -15,6 +15,11 @@ instance CharShow Bool where
   charShow True =  '.'
   charShow False = '#'
 
+instance CharShow Int where
+  charShow i
+    | i >= 0 && i <= 9 = head $ show i
+    | otherwise = error "Too big i"
+
 showPlane :: (CharShow e, R.Source r e) => R.Array r I2 e -> String
 showPlane arr = concatMap showLine [ySize - 1,ySize - 2..0]
   where V2 xSize ySize = R.extent arr
