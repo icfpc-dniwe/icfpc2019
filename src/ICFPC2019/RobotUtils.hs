@@ -57,7 +57,7 @@ checkBoundaries :: MapArray -> I2 -> Bool
 checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 
 checkObstacles :: MapArray -> I2 -> Bool
-checkObstacles gameMap pos = not (gameMap R.! pos)
+checkObstacles gameMap pos = gameMap R.! pos
 
 sign :: Float -> Int
 sign v

@@ -26,6 +26,8 @@ data Booster = Extension
              | Teleport
              deriving (Show, Eq, Ord, Generic)
 
+-- True - empty
+-- False - obstacle
 type MapArray = Array U I2 Bool
 
 data Orientation = E | N | W | S
