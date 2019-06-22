@@ -81,7 +81,7 @@ getAllActions :: Problem -> ProblemState -> [Action]
 getAllActions problem@(Problem {..}) state@(ProblemState {..}) = 
   let robot = problemRobot
       map_ = problemMap
-      moves = getAllMoveActions problem stage
+      moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
@@ -89,27 +89,27 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
   let robot = problemRobot
       map_ = problemMap
       newRobots = (applyAction robot map_ state) <$> moves
-      validRobots = catMaybes $ map (\(mr, move, cost) -> case mr of
-                                            Just r -> Just (r, move, cost)
+      validRobots = catMaybes $ map (\(mr, move) -> case mr of
+                                            Just r -> Just (r, move)
                                             Nothing -> Nothing
                                     ) $ zip newRobots moves
       validManips r = validManipulators map_ (robotPosition r) (robotManipulators r)
       newWrapped r = map (+ (robotPosition r)) $ S.toList $ validManips r
-      newState r move cost = (
+      newState r move = (
           state {
             problemRobot = r,
             problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
-          }, move, cost
+          }, move
         )
-  in map (\(r, m, c) -> newState r m c) validRobots
+  in map (\(r, m) -> newState r m) validRobots
 
 getAllNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getAllNeighbours problem@(Problem {..}) state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
   where neighbours = getNeighboursOfType problem state (getAllActions problem state)
-        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state))
-        usefulSteps = zip usefulSteps' [1..]
+        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
+        usefulSteps = map (\(f, s) -> (f, [s], 1)) usefulSteps'
 
         moveNeightbours = getNeighboursOfType problem state (getAllMoveActions problem state)
         moveoutSteps = map convertSteps $ maybeToList $ bfs (moveGetNeighbours problem) state hasMovedOut

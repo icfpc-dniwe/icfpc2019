@@ -1,4 +1,4 @@
-module ICFPC2019.Heuristics.Packeger where
+module ICFPC2019.Heuristics.Packager where
 
 import Data.Set (Set)
 import qualified Data.Set as S
