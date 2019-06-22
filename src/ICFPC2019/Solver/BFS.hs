@@ -13,7 +13,6 @@ import ICFPC2019.Types
 import ICFPC2019.Utils
 import ICFPC2019.Solver.Utils
 
-{-# INLINE bfs #-}
 bfs :: forall i tag score. (Hashable i, Eq i, Ord score, Num score) => (i -> [(i, tag, score)]) -> i -> (i -> Bool) -> Maybe [(i, tag)]
 bfs getNeighbours start finishCheck = go [start] (S.singleton start) M.empty
   where
@@ -24,9 +23,9 @@ bfs getNeighbours start finishCheck = go [start] (S.singleton start) M.empty
       then Just $ reverse $ traverse curNode
       else go (neighboursNode ++ seq) (S.fromList neighboursNode `S.union` discovered) parents'
       where
-        neighbours = map (\(node, tag, _) -> (node, tag)) . filter (\(node, _, _) -> not $ S.member node discovered) $ getNeighbours curNode
+        neighbours = map (\(node, tag, _) -> (node, tag)) $ filter (\(node, _, _) -> not $ S.member node discovered) $ getNeighbours curNode
         neighboursNode = map fst neighbours
-        parents' = foldr (\(node, tag) par -> M.insert node (curNode, tag) par) parents neighbours
+        parents' = foldr (\(node, tag) -> M.insert node (curNode, tag)) parents neighbours
         traverse :: i -> [(i, tag)]
         traverse node = case M.lookup node parents of
                           Just (parentNode, tag) -> (node, tag) : traverse parentNode
