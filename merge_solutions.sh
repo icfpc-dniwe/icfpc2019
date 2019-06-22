@@ -11,13 +11,13 @@ for path in $first/*.sol; do
         if [ -e "$second/$filename" ];
         then
             size2=$(wc -c < "$second/$filename")
-            echo $size1 $size2
+            # echo $size1 $size2
             if [[ $size1 < $size2 ]]; then
-                echo "copying"
+                echo "copying better $filename"
                 cp "$first/$filename" "$second/$filename"
             fi
         else
-            echo "copying2"
+            echo "copying nonexistant $filename"
             cp "$first/$filename" "$second/$filename"
         fi
     fi
