@@ -5,6 +5,7 @@ import Data.List
 import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
+import qualified Data.HashMap.Strict as M
 import Data.Maybe
 import Linear.V2
 
@@ -15,8 +16,32 @@ import ICFPC2019.RobotUtils
 
 import Debug.Trace
 
-move' :: I2 -> Action -> I2
-move' pos action = move pos action 1 
+collectBooster :: Problem -> ProblemState -> Booster -> ProblemState
+collectBooster problem@(Problem {..}) state@(ProblemState {..}) bst =
+  let robot = problemRobot
+      map_ = problemMap
+  in
+    case bst of
+      Extension -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpManipulator }
+      FastWheels -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpWheels }
+      Drill -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpDrill }
+      Teleport -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpBeacon }
+      Mysterious -> state
+
+collectBoosters' :: Problem -> ProblemState -> [Booster] -> ProblemState
+collectBoosters' problem s [] = s
+collectBoosters' problem s (h:t) = collectBoosters' problem (collectBooster problem s h) t
+
+collectBoosters :: Problem -> ProblemState -> ProblemState
+collectBoosters problem@(Problem {..}) state@(ProblemState {..}) =
+  let robot = problemRobot
+      pos = robotPosition robot
+      collectAt pos st = collectBoosters' problem st $ S.toList $ problemBoosters M.! pos
+      removeAt pos st = st { problemBoosters = M.delete pos problemBoosters }
+  in
+    if (M.member pos problemBoosters)
+      then removeAt pos $ collectAt pos state
+      else state
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
@@ -40,17 +65,17 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
   let robot = problemRobot
       map_ = problemMap
       newRobots = (applyAction robot map_ state) <$> moves
-      validRobots = mapMaybe (\(mr, move) -> case mr of
-                                      Just r -> Just (r, move)
+      validRobots = mapMaybe (\(mr, mov) -> case mr of
+                                      Just r -> Just (r, mov)
                                       Nothing -> Nothing
-                              ) $ zip newRobots moves
+                             ) $ zip newRobots moves
       validManips r = validManipulators map_ (robotPosition r) (robotManipulators r)
       newWrapped r = map (+ (robotPosition r)) $ S.toList $ validManips r
-      newState r move = (
-          state {
+      newState r mov = (
+          collectBoosters problem $ state {
             problemRobot = r,
             problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
-          }, move
+          }, mov
         )
   in map (\(r, m) -> newState r m) validRobots
 
