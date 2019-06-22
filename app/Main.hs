@@ -17,6 +17,7 @@ import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
 import qualified ICFPC2019.Solver.DFS as SD
 import ICFPC2019.Heuristics.Packager
+import ICFPC2019.Validate
 
 solveFD :: Problem -> ProblemState -> IO [Action]
 solveFD prob state = do
@@ -32,7 +33,9 @@ solveSA prob state = do
   let res = SA.solve prob state
 
   case res of
-    Just plan -> return $ concatMap snd plan
+    Just plan -> case validate prob state (concatMap snd plan) of
+                  Nothing -> return $ concatMap snd plan
+                  Just (errorIdx, errorAct) -> fail $ "illegale move " ++ show errorAct ++ " on index " ++ show errorIdx
     _ -> fail "Unsolvable!"
 
 solveSB :: Problem -> ProblemState -> IO [Action]
