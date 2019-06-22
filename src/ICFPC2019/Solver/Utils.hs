@@ -6,6 +6,7 @@ import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
 import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as SM
 import Data.Maybe
 import Linear.V2
 
@@ -17,14 +18,6 @@ import ICFPC2019.StateUtils
 
 import Debug.Trace
 
--- lesser is better
-hardPriority :: Action -> Int
-hardPriority (MAttachManipulator _) = 1
-hardPriority MAttachDrill = 2 -- requres mutable map!
-hardPriority MAttachWheels = 3
-hardPriority MPlaceBeacon = 4
-hardPriority _ = 100
-
 isBooster :: Action -> Bool
 isBooster (MAttachManipulator _) = True
 isBooster MAttachWheels = True
@@ -32,8 +25,27 @@ isBooster MAttachDrill = True
 isBooster MPlaceBeacon = True
 isBooster _ = False
 
+defaultPriorities :: ActionPriority
+defaultPriorities = SM.fromList $ [ (MAttachWheels, 100)
+                                  , (MPlaceBeacon, 50)
+                                  ] ++
+                                  [ (MAttachManipulator pos, 150 - idx)
+                                    | (idx, pos) <- zip [1 ..]
+                                      [ V2 0 1
+                                      , V2 0 (-1)
+                                      , V2 1 2
+                                      , V2 1 (-2)
+                                      , V2 0 2
+                                      , V2 0 (-2)
+                                      , V2 1 3
+                                      , V2 1 (-3)
+                                      , V2 0 3
+                                      , V2 0 (-3)
+                                      ]
+                                  ]
+
 getAllMoveActions :: Problem -> ProblemState -> [Action]
-getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
+getAllMoveActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
       moves = [
@@ -43,17 +55,17 @@ getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
   in moves
 
 getAllActions :: Problem -> ProblemState -> [Action]
-getAllActions problem@(Problem {..}) state@(ProblemState {..}) =
+getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
       moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
-getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
+getNeighboursOfType problem@Problem {..} state@ProblemState {..} moves =
   let robot = problemRobot
       map_ = problemMap
-      newRobots = (applyAction robot map_ state) <$> moves
+      newRobots = applyAction robot map_ state <$> moves
       validRobots = mapMaybe (\(mr, mov) -> case mr of
                                       Just r -> Just (r, mov)
                                       Nothing -> Nothing
@@ -68,17 +80,18 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
             problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
           }, mov
         )
-  in map (\(r, m) -> newState r m) validRobots
+  in map (uncurry newState) validRobots
 
-getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours problem@(Problem {..}) state
+getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours priorities problem@Problem {..} state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, m, _) -> (hardPriority $ head m) + S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
-  where neighbours = getNeighboursOfType problem state (getAllActions problem state)
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> (- cost) - diffWrapped state s) usefulSteps
+  where
+        neighbours = getNeighboursOfType problem state (getAllActions problem state)
         -- drill requires mutable map!
         stateUseful newState move = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || isBooster move && move /= MAttachDrill
-        usefulSteps' = filter (\(newState, m) -> stateUseful newState m) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], 1)) usefulSteps'
+        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
+        usefulSteps = map (\(f, s) -> (f, [s], SM.findWithDefault 1 s priorities)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
@@ -90,10 +103,10 @@ getNeighbours problem@(Problem {..}) state
                 (finalState, _) = last steps
 
 genFinish :: ProblemState -> ProblemState
-genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
+genFinish start@ProblemState {..} = start {problemUnwrapped = S.empty}
 
 diffWrapped :: ProblemState -> ProblemState -> Int
-diffWrapped startState endState = S.size $ startUnWrapped S.\\ endUnWrapped
+diffWrapped startState endState = S.size startUnWrapped - S.size endUnWrapped
   where
     startUnWrapped = problemUnwrapped startState
     endUnWrapped = problemUnwrapped endState

@@ -21,7 +21,7 @@ instance Shape I2 where
   unitDim = 1
   intersectDim = min
   addDim = (+)
-  size = foldr1 (*)
+  size = product
   sizeIsValid s = size s >= 0
   toIndex (V2 xSize ySize) (V2 x y) = y * xSize + x
   fromIndex (V2 xSize ySize) idx = V2 x y
@@ -53,7 +53,7 @@ instance Shape sh => Traversable (R.Array V sh) where
   traverse f = wrapVectorRepaM (traverse f)
 
 indexArray :: (R.Source v a) => R.Array v I2 a -> S.Set I2
-indexArray arr = S.fromList $ map (R.fromIndex curShape) [0 .. (R.size curShape) - 1]
+indexArray arr = S.fromList $ map (R.fromIndex curShape) [0 .. R.size curShape - 1]
   where
     curShape = R.extent arr
 

@@ -55,7 +55,7 @@ testCell :: CellArray -> I2 -> Test
 testCell cells idx = fromJust (cells R.! idx) ?= SimpleWrapped
 
 solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult Action)
-solveProblem (Problem {..}) ProblemState {..} = do
+solveProblem Problem {..} ProblemState {..} = do
   cells <- genCells problemUnwrapped problemMap
   robotLocation <- newVar $ robotPosition problemRobot
   robotOrientation <- newVar N

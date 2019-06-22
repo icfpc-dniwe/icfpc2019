@@ -2,6 +2,7 @@ module ICFPC2019.Types where
 
 import Data.Set (Set)
 import qualified Data.Set as S
+import Data.Map.Strict (Map)
 import Data.HashMap.Strict (HashMap)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Unboxed (U)
@@ -60,6 +61,8 @@ instance Hashable ProblemState where
 instance Hashable Booster where
 instance Hashable Robot where
 
+type ActionPriority = Map Action Int
+
 data Action = MUp
             | MDown
             | MLeft
@@ -75,7 +78,7 @@ data Action = MUp
             | MAttachDrill
 --            | MPickUpBeacon
             | MPlaceBeacon
-            | MTeleport I2
+            | MTeleport !I2
             deriving (Show, Eq, Ord)
 
 data PickAction = MPickUpManipulator
