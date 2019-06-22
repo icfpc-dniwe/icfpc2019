@@ -18,7 +18,7 @@ import ICFPC2019.StateUtils
 import Debug.Trace
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
-getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
+getAllMoveActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
       moves = [
@@ -28,17 +28,17 @@ getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
   in moves
 
 getAllActions :: Problem -> ProblemState -> [Action]
-getAllActions problem@(Problem {..}) state@(ProblemState {..}) =
+getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
       moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
-getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
+getNeighboursOfType problem@Problem {..} state@ProblemState {..} moves =
   let robot = problemRobot
       map_ = problemMap
-      newRobots = (applyAction robot map_ state) <$> moves
+      newRobots = applyAction robot map_ state <$> moves
       validRobots = mapMaybe (\(mr, mov) -> case mr of
                                       Just r -> Just (r, mov)
                                       Nothing -> Nothing
@@ -53,10 +53,10 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
             problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
           }, mov
         )
-  in map (\(r, m) -> newState r m) validRobots
+  in map (uncurry newState) validRobots
 
 getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours problem@(Problem {..}) state
+getNeighbours problem@Problem {..} state
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
   where neighbours = getNeighboursOfType problem state (getAllActions problem state)
@@ -73,7 +73,7 @@ getNeighbours problem@(Problem {..}) state
                 (finalState, _) = last steps
 
 genFinish :: ProblemState -> ProblemState
-genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
+genFinish start@ProblemState {..} = start {problemUnwrapped = S.empty}
 
 diffWrapped :: ProblemState -> ProblemState -> Int
 diffWrapped startState endState = S.size $ startUnWrapped S.\\ endUnWrapped

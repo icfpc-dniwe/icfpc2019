@@ -25,23 +25,23 @@ import ICFPC2019.Types
 import ICFPC2019.Utils
 
 speed :: Robot -> Int
-speed (Robot {..}) = if robotWheelsLeft > 0 then 2
+speed Robot {..} = if robotWheelsLeft > 0 then 2
                                             else 1
 
 drillEnabled :: Robot -> Bool
-drillEnabled (Robot {..}) = robotDrillLeft > 0
+drillEnabled Robot {..} = robotDrillLeft > 0
 
 hasUnspentBeacons :: Robot -> Bool
-hasUnspentBeacons (Robot {..}) = robotUnspentBeacons > 0
+hasUnspentBeacons Robot {..} = robotUnspentBeacons > 0
 
 hasUnspentDrills :: Robot -> Bool
-hasUnspentDrills (Robot {..}) = robotUnspentDrills > 0
+hasUnspentDrills Robot {..} = robotUnspentDrills > 0
 
 hasUnspentWheels :: Robot -> Bool
-hasUnspentWheels (Robot {..}) = robotUnspentWheels > 0
+hasUnspentWheels Robot {..} = robotUnspentWheels > 0
 
 hasUnspentManips :: Robot -> Bool
-hasUnspentManips (Robot {..}) = robotUnspentManips > 0
+hasUnspentManips Robot {..} = robotUnspentManips > 0
 
 move :: I2 -> Action -> I2
 move (V2 x y) MUp = V2 x (y+1)
@@ -99,7 +99,7 @@ cellsInBB (V2 x1 y1) (V2 x2 y2)
 obstaclesInBoundingBox :: MapArray -> I2 -> I2 -> Set I2
 obstaclesInBoundingBox map_ p1 p2 = 
     let allCells = cellsInBB p1 p2
-        obstacles = filter (\c -> not $ checkObstacles map_ c) allCells
+        obstacles = filter (not . checkObstacles map_) allCells
     in S.fromList obstacles
 
 -- cellToRect :: cell -> sides
@@ -116,20 +116,20 @@ checkCellVisibility' :: I2 -> I2 -> [(I2, I2)] -> Bool
 checkCellVisibility' (V2 xa ya) (V2 xb yb) sides = 
     let a = V2 (0.5 + fromIntegral xa) (0.5 + fromIntegral ya) :: V2 Float
         b = V2 (0.5 + fromIntegral xb) (0.5 + fromIntegral yb) :: V2 Float
-    in not $ any (\(c, d) -> segmentIntersectsLine a b c d) sides
+    in not $ any (uncurry $ segmentIntersectsLine a b) sides
 
 --checkCellVisibility :: map -> src -> dst -> bool
 checkCellVisibility :: MapArray -> I2 -> I2 -> Bool
 checkCellVisibility map_ src@(V2 x0 y0) dst@(V2 x1 y1) = 
     let obstacles = obstaclesInBoundingBox map_ src dst
-        obstRects = cellToRect <$> (S.toList obstacles)
-    in all id $ (checkCellVisibility' src dst) <$> obstRects
+        obstRects = cellToRect <$> S.toList obstacles
+    in and $ checkCellVisibility' src dst <$> obstRects
 
 manipulatorExtensionLocations' :: I2 -> Set I2
 manipulatorExtensionLocations' (V2 x y) = S.fromList [V2 (x+1) y, V2 (x-1) y, V2 x (y+1), V2 x (y-1)]
 
 manipulatorExtensionLocations :: Set I2 -> Set I2
-manipulatorExtensionLocations manips = S.difference (foldr1 (S.union) $ map manipulatorExtensionLocations' $ S.toList manips) manips
+manipulatorExtensionLocations manips = S.difference (foldr1 S.union $ map manipulatorExtensionLocations' $ S.toList manips) manips
 
 --validManipulators :: map -> pivot -> manipulators -> valid manipulators
 validManipulators :: MapArray -> I2 -> Set I2 -> Set I2
@@ -153,7 +153,7 @@ applyMoveAction r action s =
 
 applyRotAction :: Robot -> Action -> Robot
 applyRotAction r action =
-  decrementBoosters $ r { robotManipulators = S.fromList $ map (\m -> rot m action) $ S.toList $ robotManipulators r
+  decrementBoosters $ r { robotManipulators = S.fromList $ map (`rot` action) $ S.toList $ robotManipulators r
                         }
 
 applyPick' :: Robot -> PickAction -> Robot
@@ -202,7 +202,7 @@ validateRobot :: MapArray -> ProblemState -> Robot -> Maybe Robot
 validateRobot map_ state r = 
     let rpos = robotPosition r
         drill = drillEnabled r
-        valid = all id [
+        valid = and [
                 checkBoundaries map_ rpos,
                 not drill && (checkObstacles map_ rpos)
             ]
@@ -287,7 +287,7 @@ applyAction r map_ state MAttachDrill =
 
 applyAction r map_ state MPlaceBeacon = 
     let bpos = robotPosition r
-        avail = all id [
+        avail = and [
                 hasUnspentBeacons r,
                 not $ S.member bpos $ robotBeacons r
             ]
