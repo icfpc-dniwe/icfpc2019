@@ -135,7 +135,7 @@ lmEval2 = FD.LMCount FD.LMCountConfiguration
           }
 
 defaultCfg :: FD.SearchEngine
-defaultCfg = astar
+defaultCfg = eagerBFS
 
 astar :: FD.SearchEngine
 astar = FD.AStar FD.AStarConfiguration

@@ -6,4 +6,5 @@ import ICFPC2019.Utils
 import ICFPC2019.Solver.Utils
 
 solve :: Problem -> ProblemState -> Maybe [(ProblemState, Action)]
-solve problem state = aStar (getNeighbours problem) diffWrapped state $ genFinish state
+
+solve problem state = aStar (getNeighbours problem) metric diffWrapped state $ genFinish state
