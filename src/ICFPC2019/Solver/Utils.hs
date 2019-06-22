@@ -63,22 +63,34 @@ getNeighbours problem@(Problem {..}) state
                 cost = length steps
                 (finalState, _) = last steps
 
-getAllNeighbours :: Problem -> ProblemState -> [(ProblemState, Action, Int)]
-getAllNeighbours problem@(Problem {..}) state@(ProblemState {..}) = 
+--
+
+getAllMoveActions :: Problem -> ProblemState -> [Action]
+getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) = 
   let robot = problemRobot
       map_ = problemMap
       moves = [
           MUp, MRight, MDown, MLeft,
-          MTurnRight, MTurnLeft,
           MAttachWheels, MAttachDrill, MPlaceBeacon
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
-          ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
-      costs = [1..]
+  in moves 
+
+getAllActions :: Problem -> ProblemState -> [Action]
+getAllActions problem@(Problem {..}) state@(ProblemState {..}) = 
+  let robot = problemRobot
+      map_ = problemMap
+      moves = getAllMoveActions problem stage
+  in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
+
+getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
+getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves = 
+  let robot = problemRobot
+      map_ = problemMap
       newRobots = (applyAction robot map_ state) <$> moves
       validRobots = catMaybes $ map (\(mr, move, cost) -> case mr of
                                             Just r -> Just (r, move, cost)
                                             Nothing -> Nothing
-                                    ) $ zip3 newRobots moves costs
+                                    ) $ zip newRobots moves
       validManips r = validManipulators map_ (robotPosition r) (robotManipulators r)
       newWrapped r = map (+ (robotPosition r)) $ S.toList $ validManips r
       newState r move cost = (
@@ -88,6 +100,25 @@ getAllNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
           }, move, cost
         )
   in map (\(r, m, c) -> newState r m c) validRobots
+
+getAllNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+getAllNeighbours problem@(Problem {..}) state
+  | null usefulSteps = moveoutSteps
+  | otherwise = take 1 usefulSteps
+  where neighbours = getNeighboursOfType problem state (getAllActions problem state)
+        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state))
+        usefulSteps = zip usefulSteps' [1..]
+
+        moveNeightbours = getNeighboursOfType problem state (getAllMoveActions problem state)
+        moveoutSteps = map convertSteps $ maybeToList $ bfs (moveGetNeighbours problem) state hasMovedOut
+
+        hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
+        convertSteps steps = (finalState, actions, cost)
+          where actions = map snd steps
+                cost = length steps
+                (finalState, _) = last steps
+
+--
 
 genFinish :: ProblemState -> ProblemState
 genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
