@@ -20,23 +20,30 @@ collectBooster :: Problem -> ProblemState -> Booster -> ProblemState
 collectBooster problem@(Problem {..}) state@(ProblemState {..}) bst =
   let robot = problemRobot
       map_ = problemMap
+      executeAction action =
+        let actionResult = applyAction robot map_ state action
+        in
+          case actionResult of
+            Just r -> state { problemRobot = r }
+            Nothing -> state
   in
     case bst of
-      Extension -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpManipulator }
-      FastWheels -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpWheels }
-      Drill -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpDrill }
-      Teleport -> state { problemRobot = fromJust $ applyAction robot map_ state MPickUpBeacon }
+      Extension -> executeAction MPickUpManipulator
+      FastWheels -> executeAction MPickUpWheels
+      Drill -> executeAction MPickUpDrill
+      Teleport -> executeAction MPickUpBeacon
       Mysterious -> state
 
-collectBoosters' :: Problem -> ProblemState -> [Booster] -> ProblemState
-collectBoosters' problem s [] = s
-collectBoosters' problem s (h:t) = collectBoosters' problem (collectBooster problem s h) t
+collectBoosters' :: Problem  -> [Booster] -> ProblemState -> ProblemState
+collectBoosters' _ [] s = s
+collectBoosters' problem (h:t) s = collectBoosters' problem t $ collectBooster problem s h
 
-collectBoosters :: Problem -> ProblemState -> ProblemState
-collectBoosters problem@(Problem {..}) state@(ProblemState {..}) =
+collectBoosters :: Problem -> [I2] -> ProblemState -> ProblemState
+collectBoosters _ [] state = state
+collectBoosters problem@(Problem {..}) (h:t) state@(ProblemState {..}) = collectBoosters problem t $
   let robot = problemRobot
-      pos = robotPosition robot
-      collectAt pos st = collectBoosters' problem st $ S.toList $ problemBoosters M.! pos
+      pos = h
+      collectAt pos st = collectBoosters' problem (S.toList $ problemBoosters M.! pos) st
       removeAt pos st = st { problemBoosters = M.delete pos problemBoosters }
   in
     if (M.member pos problemBoosters)
@@ -60,6 +67,14 @@ getAllActions problem@(Problem {..}) state@(ProblemState {..}) =
       moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
+cellsOnMoveLine :: I2 -> I2 -> [I2]
+cellsOnMoveLine (V2 x0 y0) (V2 x1 y1)
+  | x0 == x1 = if y0 < y1 then [V2 x0 y | y <- [y0..y1]]
+                          else [V2 x0 y | y <- [y1..y0]]
+  | y0 == y1 = if x0 < x1 then [V2 x y0 | x <- [x0..x1]]
+                          else [V2 x y0 | x <- [x1..x0]]
+  | otherwise = trace "cellsOnMoveLine: incorrect movement line" $ [V2 x1 y1]
+
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
 getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
   let robot = problemRobot
@@ -69,10 +84,12 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
                                       Just r -> Just (r, mov)
                                       Nothing -> Nothing
                              ) $ zip newRobots moves
-      validManips r = validManipulators map_ (robotPosition r) (robotManipulators r)
-      newWrapped r = map (+ (robotPosition r)) $ S.toList $ validManips r
+      moveSpanCells r = cellsOnMoveLine (robotPosition robot) (robotPosition r)
+      validManips r pos = validManipulators map_ pos (robotManipulators r)
+      validManipsTotal r = S.toList $ foldr1 (S.union) $ (validManips r) <$> moveSpanCells r
+      newWrapped r = map (+ (robotPosition r)) $ validManipsTotal r
       newState r mov = (
-          collectBoosters problem $ state {
+          collectBoosters problem (moveSpanCells r) $ state {
             problemRobot = r,
             problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
           }, mov

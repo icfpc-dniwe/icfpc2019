@@ -1,6 +1,7 @@
 module ICFPC2019.RobotUtils
   ( move
   , rot
+  , speed
   , checkBoundaries
   , checkObstacles
   , manipulatorExtensionLocations
@@ -132,7 +133,7 @@ decrementBoosters r = r {
 }
 
 applyMoveAction :: Robot -> Action -> Int -> Robot
-applyMoveAction r action s = decrementBoosters $ r {
+applyMoveAction r action s = r {
     robotPosition = move (robotPosition r) action s
 }
 
@@ -153,19 +154,22 @@ applyAction' r MPickUpManipulator = r {
     robotUnspentManips = 1 + robotUnspentManips r
 }
 applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
-    robotManipulators = S.insert m $ robotManipulators r
+    robotManipulators = S.insert m $ robotManipulators r,
+    robotUnspentManips = max 0 $ robotUnspentManips r - 1
 }
 applyAction' r MPickUpWheels = r {
     robotUnspentWheels = 1 + robotUnspentWheels r
 }
 applyAction' r MAttachWheels = decrementBoosters $ r {
-    robotWheelsLeft = max 50 $ robotWheelsLeft r
+    robotWheelsLeft = max 50 $ robotWheelsLeft r,
+    robotUnspentWheels = max 0 $ robotUnspentWheels r - 1
 }
 applyAction' r MPickUpDrill = r {
     robotUnspentDrills = 1 + robotUnspentDrills r
 }
 applyAction' r MAttachDrill = decrementBoosters $ r {
-    robotDrillLeft = max 30 $ robotDrillLeft r
+    robotDrillLeft = max 30 $ robotDrillLeft r,
+    robotUnspentDrills = max 0 $ robotUnspentDrills r - 1
 }
 applyAction' r MPickUpBeacon = r {
     robotUnspentBeacons = 1 + robotUnspentBeacons r
@@ -177,11 +181,6 @@ applyAction' r MPlaceBeacon = decrementBoosters $ r {
 applyAction' r (MTeleport b) = decrementBoosters $ r {
     robotPosition = b
 }
-
-findValid :: [Maybe a] -> Maybe a
-findValid [] = Nothing
-findValid ((Just x):t) = Just x
-findValid (Nothing:t) = findValid t
 
 validateRobot :: MapArray Cell -> ProblemState -> Robot -> Maybe Robot
 validateRobot map_ state r = 
@@ -195,17 +194,31 @@ validateRobot map_ state r =
         if valid then Just r
                  else Nothing
 
-applyValidMoveAction :: MapArray Cell -> ProblemState -> Action -> Robot -> Maybe Robot
-applyValidMoveAction map_ state action r =
-    let possibleRobots = map (applyMoveAction r action) [1..(speed r)]
-        validRobot = findValid $ (validateRobot map_ state) <$> possibleRobots
+applyValidMoveAction' :: MapArray Cell -> ProblemState -> Action -> Int -> Robot -> Robot
+applyValidMoveAction' map_ state action 0 r = r
+applyValidMoveAction' map_ state action remainingSteps r = 
+    let possibleRobot = applyMoveAction r action 1
+        validRobot = validateRobot map_ state possibleRobot
     in
         case validRobot of
-            Just x -> Just (decrementBoosters x)
-            Nothing -> Nothing 
+            Just r' -> applyValidMoveAction' map_ state action (remainingSteps-1) r'
+            Nothing -> r
+
+applyValidMoveAction :: MapArray Cell -> ProblemState -> Action -> Robot -> Maybe Robot
+applyValidMoveAction map_ state action r = 
+    let newRobot = applyValidMoveAction' map_ state action (speed r) r
+    in
+        if (robotPosition newRobot /= robotPosition r)
+            then Just $ decrementBoosters newRobot
+            else Nothing
 
 boosterAvailable :: I2 -> ProblemState -> Booster -> Bool
-boosterAvailable pos state bst = S.member bst $ (problemBoosters state) M.! pos
+boosterAvailable pos state bst =
+    let boosters = problemBoosters state
+    in
+        if M.member pos boosters
+            then S.member bst $ boosters M.! pos
+            else False
 
 applyAction :: Robot -> MapArray Cell -> ProblemState -> Action -> Maybe Robot
 applyAction r map_ state MNothing = Just (applyAction' r MNothing)
@@ -244,7 +257,7 @@ applyAction r map_ state MPickUpDrill =
         if avail then Just (applyAction' r MPickUpDrill)
                  else Nothing
 applyAction r map_ state MAttachDrill = 
-    let avail = hasUnspentWheels r
+    let avail = hasUnspentDrills r
     in
         if avail then Just (applyAction' r MAttachDrill)
                  else Nothing
