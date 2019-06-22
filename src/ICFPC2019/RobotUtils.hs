@@ -76,7 +76,7 @@ applyRotAction r action = decrementBoosters $ r {
 }
 
 applyAction' :: Robot -> Action -> Robot
-applyAction' r MNothing = r
+applyAction' r MNothing = decrementBoosters r
 --applyAction' r MUp = applyMoveAction r MUp
 --applyAction' r MDown = applyMoveAction r MDown
 --applyAction' r MLeft = applyMoveAction r MLeft
@@ -142,7 +142,7 @@ boosterAvailable :: I2 -> ProblemState -> Booster -> Bool
 boosterAvailable pos state bst = S.member bst $ (problemBoosters state) M.! pos
 
 applyAction :: Robot -> MapArray Cell -> ProblemState -> Action -> Maybe Robot
-applyAction r map_ state MNothing = Just r
+applyAction r map_ state MNothing = Just (applyAction' r MNothing)
 applyAction r map_ state MUp = applyValidMoveAction map_ state MUp r
 applyAction r map_ state MDown = applyValidMoveAction map_ state MDown r
 applyAction r map_ state MLeft = applyValidMoveAction map_ state MLeft r
