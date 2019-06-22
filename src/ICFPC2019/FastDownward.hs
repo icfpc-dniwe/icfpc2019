@@ -125,7 +125,7 @@ lmEval = FD.LMCount FD.LMCountConfiguration
          , optimal = True
          , pref = True
          , alm = True
-         , lpSolver = FD.GUROBI
+         , lpSolver = FD.CLP
          , transform = FD.NoTransform
          , cacheEstimates = True
          }
@@ -144,10 +144,47 @@ lmEval2 = FD.LMCount FD.LMCountConfiguration
           , optimal = False
           , pref = True
           , alm = True
-          , lpSolver = FD.GUROBI
+          , lpSolver = FD.CLP
           , transform = FD.NoTransform
           , cacheEstimates = True
           }
+
+mergeShrink ::  FD.Evaluator
+mergeShrink = FD.MergeAndShrink FD.MergeAndShrinkConfiguration
+  { transform = FD.NoTransform
+  , cacheEstimates = True
+  , mergeStrategy = FD.MergeSCCs FD.MergeSCCsConfiguration
+    { orderOfSCCs = FD.Topological
+    , mergeTree = Nothing
+    , mergeSelector = Just $ FD.ScoreBasedFiltering
+      [ FD.GoalRelevance
+      , FD.DFP
+      , FD.TotalOrder FD.TotalOrderConfiguration
+        { atomicTsOrder = FD.ReverseLevelAtomicTs
+        , productTsOrder = FD.NewToOld
+        , atomicBeforeProduct = False
+        , randomSeed = Just 444
+        }
+      ]
+    }
+  , shrinkStrategy = FD.Bisimulation FD.BisimulationConfiguration
+    { greedy = False
+    , atLimit = FD.UseUp
+    }
+  , labelReduction = FD.ExactGeneralizedLabelReduction FD.ExactGeneralizedLabelReductionConfiguration
+    { beforeShrinking = False
+    , beforeMerging = False
+    , method = FD.AllTransitionSystemsWithFixpoint
+    , systemOrder = FD.RandomSystemOrder
+    , randomSeed = Just 444
+    }
+  , pruneUnreachableStates = True
+  , pruneIrrelevantStates = True
+  , maxStates = Nothing
+  , maxStatesBeforeMerge = Nothing
+  , thresholdBeforeMerge = Nothing
+  , verbosity = FD.Silent
+  }
 
 defaultCfg :: FD.SearchEngine
 defaultCfg = eagerBFS
@@ -196,4 +233,25 @@ eagerBFS = FD.EagerBestFirst FD.EagerBestFirstConfiguration
            , bound = Nothing
            , maxTime = Nothing
            }
+
+eagerBFS2 :: FD.SearchEngine
+eagerBFS2 = FD.EagerBestFirst FD.EagerBestFirstConfiguration
+           { open = FD.EpsilonGreedy FD.EpsilonGreedyConfiguration
+             { eval = lmEval2
+             , prefOnly = False
+             , epsilon = 0.2
+             , randomSeed = Just 444
+             }
+           , reopenClosed = True
+           , fEval = Nothing
+           , preferred = [mergeShrink, lmEval2]
+           , pruning = FD.StubbornSetsSimple FD.StubbornSetsConfiguration
+             { minRequiredPruningRatio = 0.0
+             , expansionsBeforeCheckingPruningRatio = Just 1000
+             }
+           , costType = FD.Normal
+           , bound = Nothing
+           , maxTime = Nothing
+           }
+
   
