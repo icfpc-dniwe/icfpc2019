@@ -33,10 +33,13 @@ data Orientation = E | N | W | S
 
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
+                   , robotUnspentManips :: !Int
                    , robotBeacons :: !(Set I2)
+                   , robotUnspentBeacons :: !Int
                    , robotDrillLeft :: !Int
+                   , robotUnspentDrills :: !Int
                    , robotWheelsLeft :: !Int
-                   , robotBeaconsLeft :: !Int
+                   , robotUnspentWheels :: !Int
                    }
              deriving (Show, Eq, Ord, Generic)
 
@@ -66,9 +69,13 @@ data Action = MUp
             | MNothing
             | MTurnRight
             | MTurnLeft
+            | MPickUpManipulator
             | MAttachManipulator !I2
+            | MPickUpWheels
             | MAttachWheels
+            | MPickUpDrill
             | MAttachDrill
+            | MPickUpBeacon
             | MPlaceBeacon
             | MTeleport I2
             deriving (Show, Eq, Ord)

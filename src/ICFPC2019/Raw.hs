@@ -95,10 +95,13 @@ convertProblem (RawProblem { .. }) =
 
         problemRobot = Robot { robotPosition = start
                              , robotManipulators = S.fromList manipulators
+                             , robotUnspentManips = 0
                              , robotBeacons = S.empty
+                             , robotUnspentBeacons = 0
                              , robotDrillLeft = 0
+                             , robotUnspentDrills = 0
                              , robotWheelsLeft = 0
-                             , robotBeaconsLeft = 0
+                             , robotUnspentWheels = 0
                              }
 
         problemBoosters = M.fromListWith S.union $ map (\(booster, p) -> (p, S.singleton booster)) rawBoosters
