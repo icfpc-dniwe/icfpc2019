@@ -67,13 +67,19 @@ data Action = MUp
             | MNothing
             | MTurnRight
             | MTurnLeft
-            | MPickUpManipulator
+--            | MPickUpManipulator
             | MAttachManipulator !I2
-            | MPickUpWheels
+--            | MPickUpWheels
             | MAttachWheels
-            | MPickUpDrill
+--            | MPickUpDrill
             | MAttachDrill
-            | MPickUpBeacon
+--            | MPickUpBeacon
             | MPlaceBeacon
             | MTeleport I2
             deriving (Show, Eq, Ord)
+
+data PickAction = MPickUpManipulator
+                | MPickUpWheels
+                | MPickUpDrill
+                | MPickUpBeacon
+                deriving (Show, Eq, Ord)

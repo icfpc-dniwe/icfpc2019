@@ -7,6 +7,7 @@ module ICFPC2019.RobotUtils
   , manipulatorExtensionLocations
   , validManipulators
   , applyAction
+  , applyPick
   , applyOrientation
   , rotateLeft
   , rotateRight
@@ -143,6 +144,20 @@ applyRotAction r action =
   decrementBoosters $ r { robotManipulators = S.fromList $ map (\m -> rot m action) $ S.toList $ robotManipulators r
                         }
 
+applyPick' :: Robot -> PickAction -> Robot
+applyPick' r MPickUpManipulator = r {
+    robotUnspentManips = 1 + robotUnspentManips r
+}
+applyPick' r MPickUpWheels = r {
+    robotUnspentWheels = 1 + robotUnspentWheels r
+}
+applyPick' r MPickUpDrill = r {
+    robotUnspentDrills = 1 + robotUnspentDrills r
+}
+applyPick' r MPickUpBeacon = r {
+    robotUnspentBeacons = 1 + robotUnspentBeacons r
+}
+
 applyAction' :: Robot -> Action -> Robot
 applyAction' r MNothing = decrementBoosters r
 --applyAction' r MUp = applyMoveAction r MUp
@@ -151,29 +166,17 @@ applyAction' r MNothing = decrementBoosters r
 --applyAction' r MRight = applyMoveAction r MRight
 applyAction' r MTurnLeft = applyRotAction r MTurnLeft
 applyAction' r MTurnRight = applyRotAction r MTurnRight
-applyAction' r MPickUpManipulator = r {
-    robotUnspentManips = 1 + robotUnspentManips r
-}
 applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
     robotManipulators = S.insert m $ robotManipulators r,
     robotUnspentManips = max 0 $ robotUnspentManips r - 1
-}
-applyAction' r MPickUpWheels = r {
-    robotUnspentWheels = 1 + robotUnspentWheels r
 }
 applyAction' r MAttachWheels = decrementBoosters $ r {
     robotWheelsLeft = max 50 $ robotWheelsLeft r,
     robotUnspentWheels = max 0 $ robotUnspentWheels r - 1
 }
-applyAction' r MPickUpDrill = r {
-    robotUnspentDrills = 1 + robotUnspentDrills r
-}
 applyAction' r MAttachDrill = decrementBoosters $ r {
     robotDrillLeft = max 30 $ robotDrillLeft r,
     robotUnspentDrills = max 0 $ robotUnspentDrills r - 1
-}
-applyAction' r MPickUpBeacon = r {
-    robotUnspentBeacons = 1 + robotUnspentBeacons r
 }
 applyAction' r MPlaceBeacon = decrementBoosters $ r {
     robotBeacons = S.insert (robotPosition r) $ robotBeacons r,
@@ -221,6 +224,28 @@ boosterAvailable pos state bst =
             then S.member bst $ boosters M.! pos
             else False
 
+applyPick :: Robot -> MapArray -> ProblemState -> PickAction -> Maybe Robot
+applyPick r map_ state MPickUpManipulator =
+    let avail = boosterAvailable (robotPosition r) state Extension
+    in
+        if avail then Just (applyPick' r MPickUpManipulator)
+                 else Nothing
+applyPick r map_ state MPickUpWheels =
+    let avail = boosterAvailable (robotPosition r) state FastWheels
+    in
+        if avail then Just (applyPick' r MPickUpWheels)
+                 else Nothing
+applyPick r map_ state MPickUpDrill =
+    let avail = boosterAvailable (robotPosition r) state Drill
+    in
+        if avail then Just (applyPick' r MPickUpDrill)
+                 else Nothing
+applyPick r map_ state MPickUpBeacon =
+    let avail = boosterAvailable (robotPosition r) state Teleport
+    in
+        if avail then Just (applyPick' r MPickUpBeacon)
+                 else Nothing
+
 applyAction :: Robot -> MapArray -> ProblemState -> Action -> Maybe Robot
 applyAction r map_ state MNothing = Just (applyAction' r MNothing)
 applyAction r map_ state MUp = applyValidMoveAction map_ state MUp r
@@ -229,45 +254,24 @@ applyAction r map_ state MLeft = applyValidMoveAction map_ state MLeft r
 applyAction r map_ state MRight = applyValidMoveAction map_ state MRight r
 applyAction r map_ state MTurnRight = Just (applyAction' r MTurnRight)
 applyAction r map_ state MTurnLeft = Just (applyAction' r MTurnLeft)
-
-applyAction r map_ state MPickUpManipulator = 
-    let avail = boosterAvailable (robotPosition r) state Extension
-    in
-        if avail then Just (applyAction' r MPickUpManipulator)
-                 else Nothing
 applyAction r map_ state (MAttachManipulator m) = 
     let avail = hasUnspentManips r
     in
         if avail then Just (applyAction' r (MAttachManipulator m))
                  else Nothing
 
-applyAction r map_ state MPickUpWheels = 
-    let avail = boosterAvailable (robotPosition r) state FastWheels
-    in
-        if avail then Just (applyAction' r MPickUpWheels)
-                 else Nothing
 applyAction r map_ state MAttachWheels = 
     let avail = hasUnspentWheels r
     in
         if avail then Just (applyAction' r MAttachWheels)
                  else Nothing
 
-applyAction r map_ state MPickUpDrill = 
-    let avail = boosterAvailable (robotPosition r) state Drill
-    in
-        if avail then Just (applyAction' r MPickUpDrill)
-                 else Nothing
 applyAction r map_ state MAttachDrill = 
     let avail = hasUnspentDrills r
     in
         if avail then Just (applyAction' r MAttachDrill)
                  else Nothing
 
-applyAction r map_ state MPickUpBeacon = 
-    let avail = boosterAvailable (robotPosition r) state Teleport
-    in
-        if avail then Just (applyAction' r MPickUpBeacon)
-                 else Nothing
 
 applyAction r map_ state MPlaceBeacon = 
     let bpos = robotPosition r
@@ -280,7 +284,7 @@ applyAction r map_ state MPlaceBeacon =
                  else Nothing   
 
 applyAction r map_ state (MTeleport b) = 
-    if (S.member b $ robotBeacons r)
+    if S.member b $ robotBeacons r
         then Just (applyAction' r (MTeleport b))
         else Nothing
 

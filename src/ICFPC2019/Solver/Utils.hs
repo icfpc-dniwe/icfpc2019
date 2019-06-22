@@ -13,42 +13,9 @@ import DNIWEChan.Graph
 import ICFPC2019.Utils
 import ICFPC2019.Types
 import ICFPC2019.RobotUtils
+import ICFPC2019.StateUtils
 
 import Debug.Trace
-
-collectBooster :: Problem -> ProblemState -> Booster -> ProblemState
-collectBooster problem@(Problem {..}) state@(ProblemState {..}) bst =
-  let robot = problemRobot
-      map_ = problemMap
-      executeAction action =
-        let actionResult = applyAction robot map_ state action
-        in
-          case actionResult of
-            Just r -> state { problemRobot = r }
-            Nothing -> state
-  in
-    case bst of
-      Extension -> executeAction MPickUpManipulator
-      FastWheels -> executeAction MPickUpWheels
-      Drill -> executeAction MPickUpDrill
-      Teleport -> executeAction MPickUpBeacon
-      Mysterious -> state
-
-collectBoosters' :: Problem  -> [Booster] -> ProblemState -> ProblemState
-collectBoosters' _ [] s = s
-collectBoosters' problem (h:t) s = collectBoosters' problem t $ collectBooster problem s h
-
-collectBoosters :: Problem -> [I2] -> ProblemState -> ProblemState
-collectBoosters _ [] state = state
-collectBoosters problem@(Problem {..}) (h:t) state@(ProblemState {..}) = collectBoosters problem t $
-  let robot = problemRobot
-      pos = h
-      collectAt pos st = collectBoosters' problem (S.toList $ problemBoosters M.! pos) st
-      removeAt pos st = st { problemBoosters = M.delete pos problemBoosters }
-  in
-    if (M.member pos problemBoosters)
-      then removeAt pos $ collectAt pos state
-      else state
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
@@ -66,14 +33,6 @@ getAllActions problem@(Problem {..}) state@(ProblemState {..}) =
       map_ = problemMap
       moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
-
-cellsOnMoveLine :: I2 -> I2 -> [I2]
-cellsOnMoveLine (V2 x0 y0) (V2 x1 y1)
-  | x0 == x1 = if y0 < y1 then [V2 x0 y | y <- [y0..y1]]
-                          else [V2 x0 y | y <- [y1..y0]]
-  | y0 == y1 = if x0 < x1 then [V2 x y0 | x <- [x0..x1]]
-                          else [V2 x y0 | x <- [x1..x0]]
-  | otherwise = trace "cellsOnMoveLine: incorrect movement line" $ [V2 x1 y1]
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
 getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
