@@ -57,8 +57,8 @@ solveSD prob state = do
 
 main :: IO ()
 main = do
-  path <- getEnv "PATH"
-  putStrLn ("PATH=" ++ path)
+  --path <- getEnv "PATH"
+  --putStrLn ("PATH=" ++ path)
   [path] <- getArgs
   input <- BL.readFile path
   rawProb <-

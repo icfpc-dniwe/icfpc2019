@@ -45,7 +45,7 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
                              ) $ zip newRobots moves
       moveSpanCells r = cellsOnMoveLine (robotPosition robot) (robotPosition r)
       validManips r pos = validManipulators map_ pos (robotManipulators r)
-      validManipsTotal r = S.toList $ foldr1 (S.union) $ (validManips r) <$> moveSpanCells r
+      validManipsTotal r = S.toList $ foldr (S.union) S.empty $ (validManips r) <$> moveSpanCells r
       newWrapped r = map (+ (robotPosition r)) $ validManipsTotal r
       newState r mov = (
           collectBoosters problem (moveSpanCells r) $ state {
