@@ -14,7 +14,7 @@ import ICFPC2019.Utils
 import ICFPC2019.Solver.Utils
 
 {-# INLINE bfs #-}
-bfs :: forall i tag score. (Hashable i, Eq i) => (i -> [(i, tag)]) -> i -> (i -> Bool) -> Maybe [(i, tag)]
+bfs :: forall i tag score. (Hashable i, Eq i, Ord score, Num score) => (i -> [(i, tag, score)]) -> i -> (i -> Bool) -> Maybe [(i, tag)]
 bfs getNeighbours start finishCheck = go [start] (S.singleton start) M.empty
   where
     go :: [i] -> HashSet i -> HashMap i (i, tag) -> Maybe [(i, tag)]
@@ -24,7 +24,7 @@ bfs getNeighbours start finishCheck = go [start] (S.singleton start) M.empty
       then Just $ traverse curNode
       else go (neighboursNode ++ seq) (S.fromList neighboursNode `S.union` discovered) parents'
       where
-        neighbours = filter (\(node, _) -> not $ S.member node discovered) $ getNeighbours curNode
+        neighbours = map (\(node, tag, _) -> (node, tag)) . filter (\(node, _, _) -> not $ S.member node discovered) $ getNeighbours curNode
         neighboursNode = map fst neighbours
         parents' = foldr (\(node, tag) par -> M.insert node (curNode, tag) par) parents neighbours
         traverse :: i -> [(i, tag)]

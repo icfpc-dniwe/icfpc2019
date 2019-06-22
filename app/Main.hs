@@ -51,7 +51,7 @@ main = do
   hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
-  solution <- solveFD prob state
+  solution <- solveSB prob state
 
   BB.hPutBuilder stdout $ buildSolution solution
   putStrLn ""

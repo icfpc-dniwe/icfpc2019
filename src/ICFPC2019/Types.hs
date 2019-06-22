@@ -5,7 +5,7 @@ import qualified Data.Set as S
 import Data.HashMap.Strict (HashMap)
 import Data.Array.Repa
 import Data.Array.Repa.Repr.Vector (V)
-import Data.Hashable (Hashable, hashWithSalt)
+import Data.Hashable (Hashable, hashWithSalt, hash)
 import GHC.Generics (Generic)
 
 import ICFPC2019.Utils
@@ -51,11 +51,16 @@ data Problem = Problem { problemMap :: !(MapArray Cell)
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
-                                 , problemTurn :: !Int
+--                                 , problemTurn :: !Int
                                  }
-                  deriving (Show, Eq, Ord, Generic)
+                  deriving (Show, Ord, Eq)
 
 instance Hashable ProblemState where
+  hashWithSalt salt ProblemState{..} = hashRobot
+    where
+      hashBoosters = hashWithSalt salt problemBoosters
+      hashUnwrapped = hashWithSalt hashBoosters problemUnwrapped
+      hashRobot = hashWithSalt hashUnwrapped problemRobot
 instance Hashable Booster where
 instance Hashable Robot where
 
