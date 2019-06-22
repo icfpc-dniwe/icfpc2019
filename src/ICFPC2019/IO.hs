@@ -1,16 +1,20 @@
 module ICFPC2019.IO
   ( rawProblem
   , buildSolution
+  , npArray
   , mapArray
   , buildMapArray
   ) where
 
+import Control.Monad
 import Data.Functor
-import Data.Vector.Unboxed as U
+import Data.List
+import qualified Data.Vector.Unboxed as VU
 import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
 import Linear.V2
 import qualified Data.ByteString.Builder as BB
+import Data.Array.Repa (Z(..), (:.)(..))
 import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.Unboxed as R
 
@@ -18,6 +22,8 @@ import ICFPC2019.Types
 import ICFPC2019.Utils
 import ICFPC2019.Raw
   
+import Debug.Trace
+
 point :: Parser I2
 point = do
   _ <- char '('
@@ -64,8 +70,7 @@ mapCell =
   <|> (char '0' $> False)
 
 mapLine :: Parser (VU.Vector Bool)
-mapLine = do
-  VU.fromList <$> (mapCell `sepBy1` char ' ')
+mapLine = VU.fromList <$> (mapCell `sepBy1` char ' ') <* char '\n'
 
 mapArray :: Parser MapArray
 mapArray = do
@@ -73,9 +78,22 @@ mapArray = do
   _ <- char ' '
   y <- decimal
   _ <- char '\n'
-  arr <- (mconcat . reverse) <$> (mapArray `sepBy1` char '\n')
+  arr <- mconcat <$> some mapLine
   unless (VU.length arr == x * y) $ fail "mapArray: invalid size"
   return $ R.fromUnboxed (V2 x y) arr
+
+npLine :: Parser (VU.Vector Int)
+npLine = VU.fromList <$> (decimal `sepBy1` char ' ') <* char '\n'
+
+npArray :: Parser (R.Array R.U R.DIM2 Int)
+npArray = do
+  y <- decimal
+  _ <- char ' '
+  x <- decimal
+  _ <- char '\n'
+  arr <- mconcat <$> some npLine
+  unless (VU.length arr == x * y) $ fail "npArray: invalid size"
+  return $ R.fromUnboxed (Z :. y :. x) arr
 
 
 buildAction :: Action -> BB.Builder
@@ -97,9 +115,14 @@ buildSolution = mconcat . map buildAction
 
 buildMapArray :: MapArray -> BB.Builder
 buildMapArray arr =
-  BB.intDec xSyze <> BB.char7 ' ' <> BB.intDec ySize <> BB.char7 '\n' <>
-  mconcat (map showLine [ySize - 1,ySize - 2..0])
+  BB.intDec xSize <> BB.char7 ' ' <> BB.intDec ySize <> BB.char7 '\n' <>
+  mconcat (map showLine [0..ySize - 1])
 
   where V2 xSize ySize = R.extent arr
 
-        showLine y = mconcat (intersperse ' ' $ map (\x -> BB.char7 $ if arr R.! V2 x y then '1' else '0') [0..xSize - 1]) <> BB.char7 '\n'
+        showChar :: Bool -> BB.Builder
+        showChar True = BB.char7 '1'
+        showChar False = BB.char7 '0'
+
+        showLine :: Int -> BB.Builder
+        showLine y = mconcat (intersperse (BB.char7 ' ') $ map (\x -> showChar $ arr R.! V2 x y) [0..xSize - 1]) <> BB.char7 '\n'
