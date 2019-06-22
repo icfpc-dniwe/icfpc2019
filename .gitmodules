@@ -4,3 +4,6 @@
 [submodule "3rdparty/--force"]
 	path = 3rdparty/--force
 	url = git@abbradar.moe:dniwechan
+[submodule "3rdparty/fast-downward"]
+	path = 3rdparty/fast-downward
+	url = https://github.com/circuithub/fast-downward
