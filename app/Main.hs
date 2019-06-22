@@ -15,6 +15,8 @@ import ICFPC2019.FastDownward
 
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
+import qualified ICFPC2019.Solver.DFS as SD
+import ICFPC2019.Heuristics.Packager
 
 solveFD :: Problem -> ProblemState -> IO [Action]
 solveFD prob state = do
@@ -36,6 +38,14 @@ solveSA prob state = do
 solveSB :: Problem -> ProblemState -> IO [Action]
 solveSB prob state = do
   let res = SB.solve prob state
+
+  case res of
+    Just plan -> return $ concatMap snd plan
+    _ -> fail "Unsolvable!"
+
+solveSD :: Problem -> ProblemState -> IO [Action]
+solveSD prob state = do
+  let res = SD.solve prob state
 
   case res of
     Just plan -> return $ concatMap snd plan
