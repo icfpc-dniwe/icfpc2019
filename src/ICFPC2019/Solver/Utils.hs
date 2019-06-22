@@ -17,6 +17,21 @@ import ICFPC2019.StateUtils
 
 import Debug.Trace
 
+-- lesser is better
+hardPriority :: Action -> Int
+hardPriority (MAttachManipulator _) = 1
+hardPriority MAttachDrill = 2 -- requres mutable map!
+hardPriority MAttachWheels = 3
+hardPriority MPlaceBeacon = 4
+hardPriority _ = 100
+
+isBooster :: Action -> Bool
+isBooster (MAttachManipulator _) = True
+isBooster MAttachWheels = True
+isBooster MAttachDrill = True
+isBooster MPlaceBeacon = True
+isBooster _ = False
+
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
   let robot = problemRobot
@@ -58,9 +73,11 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
 getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours problem@(Problem {..}) state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, m, _) -> (hardPriority $ head m) + S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
   where neighbours = getNeighboursOfType problem state (getAllActions problem state)
-        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
+        -- drill requires mutable map!
+        stateUseful newState move = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || isBooster move && move /= MAttachDrill
+        usefulSteps' = filter (\(newState, m) -> stateUseful newState m) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], 1)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)

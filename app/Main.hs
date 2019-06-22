@@ -69,7 +69,7 @@ main = do
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
   clusters <- getRawClusters $ problemMap prob
-  hPutStrLn stderr $ show clusters
+  --hPutStrLn stderr $ show clusters
 
   solution <- solveSA prob state
   --solution <- solveFD prob state
