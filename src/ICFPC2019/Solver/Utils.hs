@@ -18,55 +18,6 @@ import Debug.Trace
 move' :: I2 -> Action -> I2
 move' pos action = move pos action 1 
 
-moveGetNeighbours :: Problem -> ProblemState -> [(ProblemState, Action)]
-moveGetNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
-    [ ( state
-        { problemUnwrapped = newUnwrapped
-        , problemRobot = problemRobot { robotPosition = newPos }
-        }
-      , mov
-      )
-    | mov <- [MUp, MRight, MDown, MLeft]
-    , let curPos = robotPosition problemRobot
-    , let newPos = move' curPos mov
-    , let newWrapped = map (+ newPos) $ S.toList $ robotManipulators problemRobot
-    , let newUnwrapped = foldr S.delete problemUnwrapped newWrapped
-    , checkBoundaries problemMap newPos
-    , checkObstacles problemMap newPos
-    ]
-
-getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours problem@(Problem {..}) state
-  | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
-  where usefulSteps =
-          [ ( state
-              { problemUnwrapped = newUnwrapped
-              , problemRobot = (problemRobot state) { robotPosition = newPos }
-              }
-            , [mov]
-            , 1
-            )
-          | mov <- [MUp, MRight, MDown, MLeft]
-          , let curPos = robotPosition $ problemRobot state
-          , let newPos = move' curPos mov
-          , let newWrapped = map (+ newPos) $ S.toList $ robotManipulators $ problemRobot state
-          , let newUnwrapped = foldr S.delete (problemUnwrapped state) newWrapped
-          , checkBoundaries problemMap newPos
-          , checkObstacles problemMap newPos
-          , S.size newUnwrapped /= S.size (problemUnwrapped state)
-          ]
-
-        moveoutSteps = map convertSteps $ maybeToList $ bfs (moveGetNeighbours problem) state hasMovedOut
-
-        hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
-        convertSteps steps = (finalState, actions, cost)
-          where actions = map snd steps
-                cost = length steps
-                (finalState, _) = last steps
-
---
-
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) = 
   let robot = problemRobot
@@ -103,16 +54,16 @@ getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
         )
   in map (\(r, m) -> newState r m) validRobots
 
-getAllNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getAllNeighbours problem@(Problem {..}) state
+getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours problem@(Problem {..}) state
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
   where neighbours = getNeighboursOfType problem state (getAllActions problem state)
         usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], 1)) usefulSteps'
 
-        moveNeightbours = getNeighboursOfType problem state (getAllMoveActions problem state)
-        moveoutSteps = map convertSteps $ maybeToList $ bfs (moveGetNeighbours problem) state hasMovedOut
+        moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
+        moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
 
         hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
         convertSteps steps = (finalState, actions, cost)
