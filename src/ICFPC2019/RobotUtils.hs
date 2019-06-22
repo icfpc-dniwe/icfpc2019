@@ -1,17 +1,5 @@
 module ICFPC2019.RobotUtils
-  ( move
-  , rot
-  , speed
-  , checkBoundaries
-  , checkObstacles
-  , manipulatorExtensionLocations
-  , validManipulators
-  , applyAction
-  , applyPick
-  , applyOrientation
-  , rotateLeft
-  , rotateRight
-  ) where
+  where
 
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -84,12 +72,17 @@ segmentIntersectsLine a b (V2 xc yc) (V2 xd yd) =
         adxab = (crossZ ad ab) :: Float
     in sign acxab /= sign adxab
 
+cellsInBB :: I2 -> I2 -> [I2]
+cellsInBB (V2 x1 y1) (V2 x2 y2)
+    | x1 < x2 && y1 < y2  = [V2 x y | x <- [x1..x2], y <- [y1..y2]]
+    | x1 < x2 && y1 >= y2 = [V2 x y | x <- [x1..x2], y <- [y2..y1]]
+    | x1 >= x2 && y1 < y2 = [V2 x y | x <- [x2..x1], y <- [y1..y2]]
+    | otherwise           = [V2 x y | x <- [x2..x1], y <- [y2..y1]]
+
 obstaclesInBoundingBox :: MapArray -> I2 -> I2 -> Set I2
-obstaclesInBoundingBox map_ (V2 x1 y1) (V2 x2 y2) = 
-    let allCells = [(V2 x y) | x <- [x1..x2],
-                               y <- [y1..y2]
-                   ]
-        obstacles = filter (checkObstacles map_) allCells
+obstaclesInBoundingBox map_ p1 p2 = 
+    let allCells = cellsInBB p1 p2
+        obstacles = filter (\c -> not $ checkObstacles map_ c) allCells
     in S.fromList obstacles
 
 -- cellToRect :: cell -> sides
@@ -99,7 +92,7 @@ cellToRect (V2 x y) =
         p1 = V2 x (y+1)
         p2 = V2 (x+1) (y+1)
         p3 = V2 (x+1) y
-    in [(p0, p1), (p1, p2), (p2, p3), (p3, p1)]
+    in [(p0, p1), (p1, p2), (p2, p3), (p3, p0)]
 
 --checkCellVisibility' :: src -> dst -> obstacle rect -> bool 
 checkCellVisibility' :: I2 -> I2 -> [(I2, I2)] -> Bool
@@ -124,9 +117,11 @@ manipulatorExtensionLocations manips = S.difference (foldr1 (S.union) $ map mani
 --validManipulators :: map -> pivot -> manipulators -> valid manipulators
 validManipulators :: MapArray -> I2 -> Set I2 -> Set I2
 validManipulators map_ pivot manips = 
-    let unfolded = filter (checkBoundaries map_) $ S.toList manips
+    let manips' = map (+ pivot) $ S.toList manips
+        unfolded = filter (checkBoundaries map_) manips'
         visible = filter (checkCellVisibility map_ pivot) unfolded
-    in S.fromList visible
+        normalized = map (\m -> m - pivot) visible
+    in S.fromList normalized
 
 decrementBoosters :: Robot -> Robot
 decrementBoosters r =
