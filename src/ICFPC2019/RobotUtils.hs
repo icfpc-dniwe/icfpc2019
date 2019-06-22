@@ -97,8 +97,8 @@ validateRobot map_ state r =
     let rpos = robotPosition r
         drill = drillEnabled r
         valid = all id [
-            checkBoundaries map_ rpos,
-            not drill && (checkObstacles map_ rpos)
+                checkBoundaries map_ rpos,
+                not drill && (checkObstacles map_ rpos)
             ]
     in
         if valid then Just r
@@ -116,23 +116,23 @@ applyValidMoveAction map_ state action r =
 applyAction :: Robot -> MapArray Cell -> ProblemState -> Action -> Maybe Robot
 applyAction r map_ state MNothing = Just r
 applyAction r map_ state MUp = applyValidMoveAction map_ state MUp r
-applyValidAction r map_ state MDown = applyValidMoveAction map_ state MDown r
-applyValidAction r map_ state MLeft = applyValidMoveAction map_ state MLeft r
-applyValidAction r map_ state MRight = applyValidMoveAction map_ state MRight r
-applyValidAction r map_ state MTurnRight = Just (applyAction' r MTurnRight)
-applyValidAction r map_ state MTurnLeft = Just (applyAction' r MTurnLeft)
-applyValidAction r map_ state (MAttachManipulator m) = Just (applyAction' r (MAttachManipulator m))
-applyValidAction r map_ state MAttachWheels = Just (applyAction' r MAttachWheels)
-applyValidAction r map_ state MAttachWheels = Just (applyAction' r MAttachDrill)
+applyAction r map_ state MDown = applyValidMoveAction map_ state MDown r
+applyAction r map_ state MLeft = applyValidMoveAction map_ state MLeft r
+applyAction r map_ state MRight = applyValidMoveAction map_ state MRight r
+applyAction r map_ state MTurnRight = Just (applyAction' r MTurnRight)
+applyAction r map_ state MTurnLeft = Just (applyAction' r MTurnLeft)
+applyAction r map_ state (MAttachManipulator m) = Just (applyAction' r (MAttachManipulator m))
+applyAction r map_ state MAttachWheels = Just (applyAction' r MAttachWheels)
+applyAction r map_ state MAttachWheels = Just (applyAction' r MAttachDrill)
 
-applyValidAction r map_ state MPlaceBeacon = 
+applyAction r map_ state MPlaceBeacon = 
     let bpos = robotPosition r
     in
         if (not $ S.member bpos $ robotBeacons r)
             then Just (applyAction' r MPlaceBeacon)
             else Nothing   
 
-applyValidAction r map_ state (MTeleport b) = 
+applyAction r map_ state (MTeleport b) = 
     if (S.member b $ robotBeacons r)
         then Just (applyAction' r (MTeleport b))
         else Nothing
