@@ -6,6 +6,7 @@ import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
 import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as SM
 import Data.Maybe
 import Linear.V2
 
@@ -16,6 +17,25 @@ import ICFPC2019.RobotUtils
 import ICFPC2019.StateUtils
 
 import Debug.Trace
+
+defaultPriorities :: ActionPriority
+defaultPriorities = SM.fromList $ [ (MAttachWheels, 100)
+                                  , (MPlaceBeacon, 50)
+                                  ] ++
+                                  [ (MAttachManipulator pos, 150 - idx)
+                                    | (idx, pos) <- zip [1 ..]
+                                      [ V2 0 1
+                                      , V2 0 (-1)
+                                      , V2 1 2
+                                      , V2 1 (-2)
+                                      , V2 0 2
+                                      , V2 0 (-2)
+                                      , V2 1 3
+                                      , V2 1 (-3)
+                                      , V2 0 3
+                                      , V2 0 (-3)
+                                      ]
+                                  ]
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@Problem {..} state@ProblemState {..} =
@@ -55,13 +75,14 @@ getNeighboursOfType problem@Problem {..} state@ProblemState {..} moves =
         )
   in map (uncurry newState) validRobots
 
-getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours problem@Problem {..} state
+getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours priorities problem@Problem {..} state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
-  where neighbours = getNeighboursOfType problem state (getAllActions problem state)
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> (- cost) - diffWrapped state s) usefulSteps
+  where
+        neighbours = getNeighboursOfType problem state (getAllActions problem state)
         usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], 1)) usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], SM.findWithDefault 1 s priorities)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
@@ -76,7 +97,7 @@ genFinish :: ProblemState -> ProblemState
 genFinish start@ProblemState {..} = start {problemUnwrapped = S.empty}
 
 diffWrapped :: ProblemState -> ProblemState -> Int
-diffWrapped startState endState = S.size $ startUnWrapped S.\\ endUnWrapped
+diffWrapped startState endState = S.size startUnWrapped - S.size endUnWrapped
   where
     startUnWrapped = problemUnwrapped startState
     endUnWrapped = problemUnwrapped endState
