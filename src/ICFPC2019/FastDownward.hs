@@ -11,6 +11,7 @@ import qualified FastDownward.Exec as FD
 import FastDownward hiding (Problem)
 import qualified FastDownward as FD
 import qualified Data.Array.Repa as R
+import Data.Array.Repa.Repr.Vector (V)
 import ICFPC2019.Types
 import ICFPC2019.Utils
 import ICFPC2019.RobotUtils
@@ -37,34 +38,30 @@ fromSimpleAction SMLeft = MLeft
 fromSimpleAction SMTurnLeft = MTurnLeft
 fromSimpleAction SMTurnRight = MTurnRight
 
-simplifyMap :: Set I2 -> MapArray Cell -> MapArray (Maybe SimpleCell)
-simplifyMap unwrapped arr = R.computeS $ R.fromFunction (R.extent arr) toSimple
+type CellArray = R.Array V I2 (Maybe (Var SimpleCell))
+
+genCells :: Set I2 -> MapArray -> FD.Problem CellArray
+genCells unwrapped arr = mapM makeOne $ R.computeS $ R.fromFunction (R.extent arr) toSimple
   where toSimple i
           | i `S.member` unwrapped = Just SimpleFree
-          | otherwise =
-            case val of
-              Free -> Just SimpleWrapped
-              Obstacle -> Nothing
+          | val = Just SimpleWrapped
+          | otherwise = Nothing
           where val = arr R.! i
 
-genCells :: MapArray (Maybe SimpleCell) -> FD.Problem (MapArray (Maybe (Var SimpleCell)))
-genCells gameMap = mapM makeOne gameMap
-  where makeOne Nothing = return Nothing
+        makeOne Nothing = return Nothing
         makeOne (Just c) = Just <$> newVar c
 
-testCell :: MapArray (Maybe (Var SimpleCell)) -> I2 -> Test
+testCell :: CellArray -> I2 -> Test
 testCell cells idx = fromJust (cells R.! idx) ?= SimpleWrapped
 
 solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult Action)
 solveProblem (Problem {..}) ProblemState {..} = do
-  let currentMap = simplifyMap problemUnwrapped problemMap
-  let curSize = R.extent currentMap
-  cells <- genCells currentMap
+  cells <- genCells problemUnwrapped problemMap
   robotLocation <- newVar $ robotPosition problemRobot
   robotOrientation <- newVar N
 
   let
-    checkRange = R.inShapeRange (V2 0 0) (curSize - 1)
+    checkRange = R.inShapeRange (V2 0 0) (R.extent problemMap - 1)
 
     markLocations :: Orientation -> I2 -> Effect ()
     markLocations newOrientation newLocation = do

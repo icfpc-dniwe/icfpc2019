@@ -3,6 +3,7 @@
 module ICFPC2019.Utils where
 
 import qualified Data.Vector as V
+import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Foldable
 import Linear.V2
@@ -10,6 +11,7 @@ import qualified Data.Array.Repa as R
 import Data.Array.Repa.Repr.Vector (V)
 import qualified Data.Array.Repa.Repr.Vector as R
 import Data.Array.Repa.Shape
+import Data.Hashable (Hashable, hashWithSalt, hash)
 
 type I2 = V2 Int
 
@@ -54,3 +56,6 @@ indexArray :: (R.Source v a) => R.Array v I2 a -> S.Set I2
 indexArray arr = S.fromList $ map (R.fromIndex curShape) [0 .. (R.size curShape) - 1]
   where
     curShape = R.extent arr
+
+instance (Hashable a) => Hashable (Set a) where
+  hashWithSalt salt set = hashWithSalt salt $ S.toList set

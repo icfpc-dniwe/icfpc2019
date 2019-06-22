@@ -4,7 +4,7 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.HashMap.Strict (HashMap)
 import Data.Array.Repa
-import Data.Array.Repa.Repr.Vector (V)
+import Data.Array.Repa.Repr.Unboxed (U)
 import Data.Hashable (Hashable, hashWithSalt, hash)
 import GHC.Generics (Generic)
 
@@ -26,7 +26,7 @@ data Booster = Extension
              | Teleport
              deriving (Show, Eq, Ord, Generic)
 
-type MapArray a = Array V I2 a
+type MapArray = Array U I2 Bool
 
 data Orientation = E | N | W | S
                  deriving (Show, Eq, Ord)
@@ -43,7 +43,7 @@ data Robot = Robot { robotPosition :: !I2
                    }
              deriving (Show, Eq, Ord, Generic)
 
-data Problem = Problem { problemMap :: !(MapArray Cell)
+data Problem = Problem { problemMap :: !MapArray
                        , problemOffset :: !I2
                        }
              deriving (Show, Eq)
@@ -57,9 +57,6 @@ data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster)
 instance Hashable ProblemState where
 instance Hashable Booster where
 instance Hashable Robot where
-
-instance (Hashable a) => Hashable (Set a) where
-  hashWithSalt salt set = hashWithSalt salt $ S.toList set
 
 data Action = MUp
             | MDown

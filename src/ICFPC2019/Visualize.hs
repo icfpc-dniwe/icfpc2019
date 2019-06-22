@@ -11,6 +11,10 @@ import ICFPC2019.Utils
 class CharShow a where
   charShow :: a -> Char
 
+instance CharShow Bool where
+  charShow True =  '.'
+  charShow False = '#'
+
 showPlane :: (CharShow e, R.Source r e) => R.Array r I2 e -> String
 showPlane arr = concatMap showLine [ySize - 1,ySize - 2..0]
   where V2 xSize ySize = R.extent arr

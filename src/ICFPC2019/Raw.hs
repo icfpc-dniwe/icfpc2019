@@ -5,13 +5,13 @@ module ICFPC2019.Raw
   ) where
 
 import Control.Monad.ST
-import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as VM
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.HashMap.Strict as M
 import qualified Data.Array.Repa as R
-import qualified Data.Array.Repa.Repr.Vector as R
+import qualified Data.Array.Repa.Repr.Unboxed as R
 import Control.Lens
 import Linear.V2
 
@@ -20,10 +20,10 @@ import ICFPC2019.Utils
  
 type RectilinearPoly = [I2]
 
-data RawProblem = RawProblem { rawMap :: RectilinearPoly
-                             , rawPosition :: I2
-                             , rawObstacles :: [RectilinearPoly]
-                             , rawBoosters :: [(Booster, I2)]
+data RawProblem = RawProblem { rawMap :: !RectilinearPoly
+                             , rawPosition :: !I2
+                             , rawObstacles :: ![RectilinearPoly]
+                             , rawBoosters :: ![(Booster, I2)]
                              }
                 deriving (Show, Eq)
 
@@ -108,22 +108,23 @@ convertProblem (RawProblem { .. }) =
         (problemUnwrapped, problemMap) = runST $ do
           let borderPoints = foldr1 S.union $ map (foldr1 S.union . map (uncurry lineVecs) . rectangle) (rawMap : rawObstacles)
 
-          cells <- VM.replicate (R.size mapSize) Obstacle
+          cells <- VUM.replicate (R.size mapSize) False
 
           let fillCells [] unwrapped = return unwrapped
               fillCells (p : queue) unwrapped = do
-                val <- VM.read cells (R.toIndex mapSize p)
-                case val of
-                  Obstacle -> do
-                    VM.write cells (R.toIndex mapSize p) Free
+                val <- VUM.read cells (R.toIndex mapSize p)
+                if not val
+                  then do
+                    VUM.write cells (R.toIndex mapSize p) True
                     let newQueue = neighbours borderPoints mapSize p
                         newUnwrapped = S.insert p unwrapped
                     fillCells (newQueue ++ queue) newUnwrapped
-                  _ -> fillCells queue unwrapped
+                  else
+                    fillCells queue unwrapped
 
           unwrapped <- fillCells [start] S.empty
           
           let finalUnwrapped = unwrapped S.\\ S.fromList (map (+ start) manipulators)
 
-          finalCells <- V.unsafeFreeze cells
-          return (finalUnwrapped, R.fromVector mapSize finalCells)
+          finalCells <- VU.unsafeFreeze cells
+          return (finalUnwrapped, R.fromUnboxed mapSize finalCells)

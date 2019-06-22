@@ -41,22 +41,23 @@ hasUnspentWheels (Robot {..}) = robotUnspentWheels > 0
 hasUnspentManips :: Robot -> Bool
 hasUnspentManips (Robot {..}) = robotUnspentManips > 0
 
--- move :: crd -> action --> speed -> new crd
-move :: I2 -> Action -> Int -> I2
-move (V2 x y) MUp s = V2 x (y+s)
-move (V2 x y) MDown s = V2 x (y-s)
-move (V2 x y) MRight s = V2 (x+s) y
-move (V2 x y) MLeft s = V2 (x-s) y
+move :: I2 -> Action -> I2
+move (V2 x y) MUp = V2 x (y+1)
+move (V2 x y) MDown = V2 x (y-1)
+move (V2 x y) MRight = V2 (x+1) y
+move (V2 x y) MLeft = V2 (x-1) y
+move p action = p
 
 rot :: I2 -> Action -> I2
 rot (V2 x y) MTurnLeft = V2 (-y) x
 rot (V2 x y) MTurnRight = V2 y (-x)
+rot p action = p
 
-checkBoundaries :: MapArray a -> I2 -> Bool
+checkBoundaries :: MapArray -> I2 -> Bool
 checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 
-checkObstacles :: MapArray Cell -> I2 -> Bool
-checkObstacles gameMap pos = (gameMap R.! pos) /= Obstacle
+checkObstacles :: MapArray -> I2 -> Bool
+checkObstacles gameMap pos = not (gameMap R.! pos)
 
 sign :: Float -> Int
 sign v
@@ -82,7 +83,7 @@ segmentIntersectsLine a b (V2 xc yc) (V2 xd yd) =
         adxab = (crossZ ad ab) :: Float
     in sign acxab /= sign adxab
 
-obstaclesInBoundingBox :: MapArray Cell -> I2 -> I2 -> Set I2
+obstaclesInBoundingBox :: MapArray -> I2 -> I2 -> Set I2
 obstaclesInBoundingBox map_ (V2 x1 y1) (V2 x2 y2) = 
     let allCells = [(V2 x y) | x <- [x1..x2],
                                y <- [y1..y2]
@@ -107,7 +108,7 @@ checkCellVisibility' (V2 xa ya) (V2 xb yb) sides =
     in not $ any (\(c, d) -> segmentIntersectsLine a b c d) sides
 
 --checkCellVisibility :: map -> src -> dst -> bool
-checkCellVisibility :: MapArray Cell -> I2 -> I2 -> Bool
+checkCellVisibility :: MapArray -> I2 -> I2 -> Bool
 checkCellVisibility map_ src@(V2 x0 y0) dst@(V2 x1 y1) = 
     let obstacles = obstaclesInBoundingBox map_ src dst
         obstRects = cellToRect <$> (S.toList obstacles)
@@ -120,27 +121,27 @@ manipulatorExtensionLocations :: Set I2 -> Set I2
 manipulatorExtensionLocations manips = S.difference (foldr1 (S.union) $ map manipulatorExtensionLocations' $ S.toList manips) manips
 
 --validManipulators :: map -> pivot -> manipulators -> valid manipulators
-validManipulators :: MapArray Cell -> I2 -> Set I2 -> Set I2
+validManipulators :: MapArray -> I2 -> Set I2 -> Set I2
 validManipulators map_ pivot manips = 
     let unfolded = filter (checkBoundaries map_) $ S.toList manips
         visible = filter (checkCellVisibility map_ pivot) unfolded
     in S.fromList visible
 
 decrementBoosters :: Robot -> Robot
-decrementBoosters r = r {
-    robotWheelsLeft = max 0 $ robotWheelsLeft r - 1,
-    robotDrillLeft = max 0 $ robotDrillLeft r - 1
-}
+decrementBoosters r =
+  r { robotWheelsLeft = max 0 $ robotWheelsLeft r - 1,
+      robotDrillLeft = max 0 $ robotDrillLeft r - 1
+    }
 
 applyMoveAction :: Robot -> Action -> Int -> Robot
-applyMoveAction r action s = r {
-    robotPosition = move (robotPosition r) action s
-}
+applyMoveAction r action s =
+  r { robotPosition = move (robotPosition r) action
+    }
 
 applyRotAction :: Robot -> Action -> Robot
-applyRotAction r action = decrementBoosters $ r {
-    robotManipulators = S.fromList $ map (\m -> rot m action) $ S.toList $ robotManipulators r
-}
+applyRotAction r action =
+  decrementBoosters $ r { robotManipulators = S.fromList $ map (\m -> rot m action) $ S.toList $ robotManipulators r
+                        }
 
 applyAction' :: Robot -> Action -> Robot
 applyAction' r MNothing = decrementBoosters r
@@ -182,7 +183,7 @@ applyAction' r (MTeleport b) = decrementBoosters $ r {
     robotPosition = b
 }
 
-validateRobot :: MapArray Cell -> ProblemState -> Robot -> Maybe Robot
+validateRobot :: MapArray -> ProblemState -> Robot -> Maybe Robot
 validateRobot map_ state r = 
     let rpos = robotPosition r
         drill = drillEnabled r
@@ -194,7 +195,7 @@ validateRobot map_ state r =
         if valid then Just r
                  else Nothing
 
-applyValidMoveAction' :: MapArray Cell -> ProblemState -> Action -> Int -> Robot -> Robot
+applyValidMoveAction' :: MapArray -> ProblemState -> Action -> Int -> Robot -> Robot
 applyValidMoveAction' map_ state action 0 r = r
 applyValidMoveAction' map_ state action remainingSteps r = 
     let possibleRobot = applyMoveAction r action 1
@@ -204,7 +205,7 @@ applyValidMoveAction' map_ state action remainingSteps r =
             Just r' -> applyValidMoveAction' map_ state action (remainingSteps-1) r'
             Nothing -> r
 
-applyValidMoveAction :: MapArray Cell -> ProblemState -> Action -> Robot -> Maybe Robot
+applyValidMoveAction :: MapArray -> ProblemState -> Action -> Robot -> Maybe Robot
 applyValidMoveAction map_ state action r = 
     let newRobot = applyValidMoveAction' map_ state action (speed r) r
     in
@@ -220,7 +221,7 @@ boosterAvailable pos state bst =
             then S.member bst $ boosters M.! pos
             else False
 
-applyAction :: Robot -> MapArray Cell -> ProblemState -> Action -> Maybe Robot
+applyAction :: Robot -> MapArray -> ProblemState -> Action -> Maybe Robot
 applyAction r map_ state MNothing = Just (applyAction' r MNothing)
 applyAction r map_ state MUp = applyValidMoveAction map_ state MUp r
 applyAction r map_ state MDown = applyValidMoveAction map_ state MDown r
