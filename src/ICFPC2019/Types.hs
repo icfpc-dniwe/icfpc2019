@@ -51,16 +51,10 @@ data Problem = Problem { problemMap :: !(MapArray Cell)
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
---                                 , problemTurn :: !Int
                                  }
-                  deriving (Show, Ord, Eq)
+                  deriving (Show, Ord, Eq, Generic)
 
 instance Hashable ProblemState where
-  hashWithSalt salt ProblemState{..} = hashRobot
-    where
-      hashBoosters = hashWithSalt salt problemBoosters
-      hashUnwrapped = hashWithSalt hashBoosters problemUnwrapped
-      hashRobot = hashWithSalt hashUnwrapped problemRobot
 instance Hashable Booster where
 instance Hashable Robot where
 

@@ -40,6 +40,7 @@ dependencies:
 - vector
 - dniwechan
 - hashable
+- split
 
 library:
   source-dirs: src
