@@ -1,13 +1,20 @@
 module ICFPC2019.RobotUtils (
-    speed
+    move
+    ,rot
+    ,speed
     ,drillEnabled
     ,hasUnspentBeacons
+    ,checkBoundaries
+    ,checkObstacles
     ,applyAction
+    ,validateRobot
     ) where
 
 import Data.Set (Set)
 import qualified Data.Set as S
+import qualified Data.Array.Repa as R
 import Linear.V2 (V2(..))
+import Data.Maybe
 
 import ICFPC2019.Types
 import ICFPC2019.Utils
@@ -22,54 +29,110 @@ drillEnabled (Robot {..}) = robotDrillLeft > 0
 hasUnspentBeacons :: Robot -> Bool
 hasUnspentBeacons (Robot {..}) = robotBeaconsLeft > 0
 
--- move' :: crd -> action --> speed -> new crd
-move' :: I2 -> Action -> Int -> I2
-move' (V2 x y) MUp s = V2 x (y+s)
-move' (V2 x y) MDown s = V2 x (y-s)
-move' (V2 x y) MRight s = V2 (x-s) y
-move' (V2 x y) MLeft s = V2 (x+s) y
+-- move :: crd -> action --> speed -> new crd
+move :: I2 -> Action -> Int -> I2
+move (V2 x y) MUp s = V2 x (y+s)
+move (V2 x y) MDown s = V2 x (y-s)
+move (V2 x y) MRight s = V2 (x-s) y
+move (V2 x y) MLeft s = V2 (x+s) y
 
-rot' :: I2 -> Action -> I2
-rot' (V2 x y) MTurnLeft = V2 (-y) x
-rot' (V2 x y) MTurnRight = V2 y (-x)
+rot :: I2 -> Action -> I2
+rot (V2 x y) MTurnLeft = V2 (-y) x
+rot (V2 x y) MTurnRight = V2 y (-x)
 
-decrementBoosters' :: Robot -> Robot
-decrementBoosters' r = r {
+checkBoundaries :: MapArray a -> I2 -> Bool
+checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
+
+checkObstacles :: MapArray Cell -> I2 -> Bool
+checkObstacles gameMap pos = (gameMap R.! pos) /= Obstacle
+
+decrementBoosters :: Robot -> Robot
+decrementBoosters r = r {
     robotWheelsLeft = max 0 $ robotWheelsLeft r - 1,
     robotDrillLeft = max 0 $ robotDrillLeft r - 1
 }
 
-applyMoveAction' :: Robot -> Action -> Robot
-applyMoveAction' r action = decrementBoosters' $ r {
-    robotPosition = move' (robotPosition r) action $ speed r
+applyMoveAction :: Robot -> Action -> Int -> Robot
+applyMoveAction r action s = decrementBoosters $ r {
+    robotPosition = move (robotPosition r) action s
 }
 
-applyRotAction' :: Robot -> Action -> Robot
-applyRotAction' r action = decrementBoosters' $ r {
-    robotManipulators = S.fromList $ map (\m -> rot' m action) $ S.toList $ robotManipulators r
+applyRotAction :: Robot -> Action -> Robot
+applyRotAction r action = decrementBoosters $ r {
+    robotManipulators = S.fromList $ map (\m -> rot m action) $ S.toList $ robotManipulators r
 }
 
-applyAction :: Robot -> Action -> Robot
-applyAction r MNothing = r
-applyAction r MUp = applyMoveAction' r MUp
-applyAction r MDown = applyMoveAction' r MDown
-applyAction r MLeft = applyMoveAction' r MLeft
-applyAction r MRight = applyMoveAction' r MRight
-applyAction r MTurnLeft = applyRotAction' r MTurnLeft
-applyAction r MTurnRight = applyRotAction' r MTurnRight
-applyAction r (MAttachManipulator m) = decrementBoosters' $ r {
+applyAction' :: Robot -> Action -> Robot
+applyAction' r MNothing = r
+--applyAction' r MUp = applyMoveAction r MUp
+--applyAction' r MDown = applyMoveAction r MDown
+--applyAction' r MLeft = applyMoveAction r MLeft
+--applyAction' r MRight = applyMoveAction r MRight
+applyAction' r MTurnLeft = applyRotAction r MTurnLeft
+applyAction' r MTurnRight = applyRotAction r MTurnRight
+applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
     robotManipulators = S.insert m $ robotManipulators r
 }
-applyAction r MAttachWheels = decrementBoosters' $ r {
+applyAction' r MAttachWheels = decrementBoosters $ r {
     robotWheelsLeft = max 50 $ robotWheelsLeft r
 }
-applyAction r MAttachDrill = decrementBoosters' $ r {
+applyAction' r MAttachDrill = decrementBoosters $ r {
     robotDrillLeft = max 30 $ robotDrillLeft r
 }
-applyAction r MPlaceBeacon = decrementBoosters' $ r {
+applyAction' r MPlaceBeacon = decrementBoosters $ r {
     robotBeacons = S.insert (robotPosition r) $ robotBeacons r,
     robotBeaconsLeft = max 0 $ robotBeaconsLeft r - 1
 }
-applyAction r (MTeleport b) = decrementBoosters' $ r {
+applyAction' r (MTeleport b) = decrementBoosters $ r {
     robotPosition = b
 }
+
+findValid :: [Maybe a] -> Maybe a
+findValid [] = Nothing
+findValid ((Just x):t) = Just x
+findValid (Nothing:t) = findValid t
+
+validateRobot :: MapArray Cell -> ProblemState -> Robot -> Maybe Robot
+validateRobot map_ state r = 
+    let rpos = robotPosition r
+        drill = drillEnabled r
+        valid = all id [
+            checkBoundaries map_ rpos,
+            not drill && (checkObstacles map_ rpos)
+            ]
+    in
+        if valid then Just r
+                 else Nothing
+
+applyValidMoveAction :: MapArray Cell -> ProblemState -> Action -> Robot -> Maybe Robot
+applyValidMoveAction map_ state action r =
+    let possibleRobots = map (applyMoveAction r action) [1..(speed r)]
+        validRobot = findValid $ (validateRobot map_ state) <$> possibleRobots
+    in
+        case validRobot of
+            Just x -> Just (decrementBoosters x)
+            Nothing -> Nothing 
+
+applyAction :: Robot -> MapArray Cell -> ProblemState -> Action -> Maybe Robot
+applyAction r map_ state MNothing = Just r
+applyAction r map_ state MUp = applyValidMoveAction map_ state MUp r
+applyValidAction r map_ state MDown = applyValidMoveAction map_ state MDown r
+applyValidAction r map_ state MLeft = applyValidMoveAction map_ state MLeft r
+applyValidAction r map_ state MRight = applyValidMoveAction map_ state MRight r
+applyValidAction r map_ state MTurnRight = Just (applyAction' r MTurnRight)
+applyValidAction r map_ state MTurnLeft = Just (applyAction' r MTurnLeft)
+applyValidAction r map_ state (MAttachManipulator m) = Just (applyAction' r (MAttachManipulator m))
+applyValidAction r map_ state MAttachWheels = Just (applyAction' r MAttachWheels)
+applyValidAction r map_ state MAttachWheels = Just (applyAction' r MAttachDrill)
+
+applyValidAction r map_ state MPlaceBeacon = 
+    let bpos = robotPosition r
+    in
+        if (not $ S.member bpos $ robotBeacons r)
+            then Just (applyAction' r MPlaceBeacon)
+            else Nothing   
+
+applyValidAction r map_ state (MTeleport b) = 
+    if (S.member b $ robotBeacons r)
+        then Just (applyAction' r (MTeleport b))
+        else Nothing
