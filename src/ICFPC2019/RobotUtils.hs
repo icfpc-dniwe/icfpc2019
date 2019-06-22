@@ -4,6 +4,7 @@ module ICFPC2019.RobotUtils
   , speed
   , checkBoundaries
   , checkObstacles
+  , isValidRobot
   , manipulatorExtensionLocations
   , validManipulators
   , applyAction
@@ -60,6 +61,10 @@ checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 checkObstacles :: MapArray -> I2 -> Bool
 checkObstacles gameMap pos = gameMap R.! pos
 
+isValidRobot :: Problem -> Robot -> Bool
+isValidRobot Problem{..} Robot{..} = checkBoundaries problemMap robotPosition &&
+                                     checkObstacles problemMap robotPosition
+
 sign :: Float -> Int
 sign v
     | abs v < 1e-10 = 0
@@ -80,14 +85,14 @@ segmentIntersectsLine a b (V2 xc yc) (V2 xd yd) =
         ab = b - a :: V2 Float
         ad = d - a :: V2 Float
         ac = c - a :: V2 Float
-        acxab = (crossZ ac ab) :: Float
-        adxab = (crossZ ad ab) :: Float
+        acxab = crossZ ac ab :: Float
+        adxab = crossZ ad ab :: Float
     in sign acxab /= sign adxab
 
 obstaclesInBoundingBox :: MapArray -> I2 -> I2 -> Set I2
 obstaclesInBoundingBox map_ (V2 x1 y1) (V2 x2 y2) = 
-    let allCells = [(V2 x y) | x <- [x1..x2],
-                               y <- [y1..y2]
+    let allCells = [V2 x y | x <- [x1..x2]
+                           , y <- [y1..y2]
                    ]
         obstacles = filter (checkObstacles map_) allCells
     in S.fromList obstacles
@@ -148,9 +153,9 @@ applyPick' :: Robot -> PickAction -> Robot
 applyPick' r MPickUpManipulator = r {
     robotUnspentManips = 1 + robotUnspentManips r
 }
-applyPick' r MPickUpWheels = r {
-    robotUnspentWheels = 1 + robotUnspentWheels r
-}
+applyPick' r MPickUpWheels = r -- {
+--    robotUnspentWheels = 1 + robotUnspentWheels r
+--}
 applyPick' r MPickUpDrill = r {
     robotUnspentDrills = 1 + robotUnspentDrills r
 }
@@ -212,7 +217,7 @@ applyValidMoveAction :: MapArray -> ProblemState -> Action -> Robot -> Maybe Rob
 applyValidMoveAction map_ state action r = 
     let newRobot = applyValidMoveAction' map_ state action (speed r) r
     in
-        if (robotPosition newRobot /= robotPosition r)
+        if robotPosition newRobot /= robotPosition r
             then Just $ decrementBoosters newRobot
             else Nothing
 
