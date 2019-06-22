@@ -1,31 +1,66 @@
 module ICFPC2019.Solver.Utils where
 
+import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
 import Linear.V2
+
+import DNIWEChan.Graph
 import ICFPC2019.Utils
 import ICFPC2019.Types
 import ICFPC2019.RobotUtils
 
+import Debug.Trace
+
 move' :: I2 -> Action -> I2
 move' pos action = move pos action 1 
 
-getNeighbours :: Problem -> ProblemState -> [(ProblemState, Action, Int)]
-getNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
-  [ ( state
-      { problemUnwrapped = foldr S.delete problemUnwrapped newWrapped
-      , problemRobot = problemRobot { robotPosition = newPos }
-      }
-    , mov, actionCost
-    )
+moveGetNeighbours :: Problem -> ProblemState -> [(ProblemState, Action)]
+moveGetNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
+    [ ( state
+        { problemUnwrapped = newUnwrapped
+        , problemRobot = problemRobot { robotPosition = newPos }
+        }
+      , mov
+      )
     | mov <- [MUp, MRight, MDown, MLeft]
-    , let actionCost = 1
     , let curPos = robotPosition problemRobot
     , let newPos = move' curPos mov
     , let newWrapped = map (+ newPos) $ S.toList $ robotManipulators problemRobot
+    , let newUnwrapped = foldr S.delete problemUnwrapped newWrapped
     , checkBoundaries problemMap newPos
     , checkObstacles problemMap newPos
-  ]
+    ]
+
+getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours problem@(Problem {..}) state
+  | null usefulSteps = moveoutSteps
+  | otherwise = take 1 usefulSteps
+  where usefulSteps =
+          [ ( state
+              { problemUnwrapped = newUnwrapped
+              , problemRobot = (problemRobot state) { robotPosition = newPos }
+              }
+            , [mov]
+            , 1
+            )
+          | mov <- [MUp, MRight, MDown, MLeft]
+          , let curPos = robotPosition $ problemRobot state
+          , let newPos = move' curPos mov
+          , let newWrapped = map (+ newPos) $ S.toList $ robotManipulators $ problemRobot state
+          , let newUnwrapped = foldr S.delete (problemUnwrapped state) newWrapped
+          , checkBoundaries problemMap newPos
+          , checkObstacles problemMap newPos
+          , S.size newUnwrapped /= S.size (problemUnwrapped state)
+          ]
+
+        moveoutSteps = map convertSteps $ maybeToList $ bfs (moveGetNeighbours problem) state hasMovedOut
+
+        hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
+        convertSteps steps = (finalState, actions, cost)
+          where actions = map snd steps
+                cost = length steps
+                (finalState, _) = last steps
 
 genFinish :: ProblemState -> ProblemState
 genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
