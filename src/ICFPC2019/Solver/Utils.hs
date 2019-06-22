@@ -19,31 +19,31 @@ move' :: I2 -> Action -> I2
 move' pos action = move pos action 1 
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
-getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) = 
+getAllMoveActions problem@(Problem {..}) state@(ProblemState {..}) =
   let robot = problemRobot
       map_ = problemMap
       moves = [
           MUp, MRight, MDown, MLeft,
           MAttachWheels, MAttachDrill, MPlaceBeacon
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
-  in moves 
+  in moves
 
 getAllActions :: Problem -> ProblemState -> [Action]
-getAllActions problem@(Problem {..}) state@(ProblemState {..}) = 
+getAllActions problem@(Problem {..}) state@(ProblemState {..}) =
   let robot = problemRobot
       map_ = problemMap
       moves = getAllMoveActions problem state
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
-getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves = 
+getNeighboursOfType problem@(Problem {..}) state@(ProblemState {..}) moves =
   let robot = problemRobot
       map_ = problemMap
       newRobots = (applyAction robot map_ state) <$> moves
-      validRobots = catMaybes $ map (\(mr, move) -> case mr of
-                                            Just r -> Just (r, move)
-                                            Nothing -> Nothing
-                                    ) $ zip newRobots moves
+      validRobots = mapMaybe (\(mr, move) -> case mr of
+                                      Just r -> Just (r, move)
+                                      Nothing -> Nothing
+                              ) $ zip newRobots moves
       validManips r = validManipulators map_ (robotPosition r) (robotManipulators r)
       newWrapped r = map (+ (robotPosition r)) $ S.toList $ validManips r
       newState r move = (

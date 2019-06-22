@@ -7,11 +7,11 @@ import qualified Data.HashMap.Strict as M
 import ICFPC2019.Types
 import ICFPC2019.Utils
 
-uncycleTrace :: Problem -> ProblemState -> [(ProblemState, Action)] -> [(ProblemState, Action)]
+uncycleTrace :: Problem -> ProblemState -> [(ProblemState, a)] -> [(ProblemState, a)]
 uncycleTrace problem state trace =
   clearTrace trace $ mark M.empty trace 0
     where
-      mark :: HashMap Robot (Int, Set I2) -> [(ProblemState, Action)] -> Int -> [(Int, Int)]
+      mark :: HashMap Robot (Int, Set I2) -> [(ProblemState, a)] -> Int -> [(Int, Int)]
       mark storage ((curState, _) : trace) curIdx =
         let
           curRobot = problemRobot curState
