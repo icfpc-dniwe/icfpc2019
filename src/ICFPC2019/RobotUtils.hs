@@ -123,7 +123,7 @@ applyAction r map_ state MTurnRight = Just (applyAction' r MTurnRight)
 applyAction r map_ state MTurnLeft = Just (applyAction' r MTurnLeft)
 applyAction r map_ state (MAttachManipulator m) = Just (applyAction' r (MAttachManipulator m))
 applyAction r map_ state MAttachWheels = Just (applyAction' r MAttachWheels)
-applyAction r map_ state MAttachWheels = Just (applyAction' r MAttachDrill)
+applyAction r map_ state MAttachDrill = Just (applyAction' r MAttachDrill)
 
 applyAction r map_ state MPlaceBeacon = 
     let bpos = robotPosition r
