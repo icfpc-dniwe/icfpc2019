@@ -15,7 +15,6 @@ getNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
   [ ( state
       { problemUnwrapped = foldr S.delete problemUnwrapped newWrapped
       , problemRobot = problemRobot { robotPosition = newPos }
---      , problemTurn = problemTurn + 1
       }
     , mov, actionCost
     )
