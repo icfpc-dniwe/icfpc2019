@@ -96,8 +96,6 @@ getNeighbours problem@(Problem {..}) state
                 cost = length steps
                 (finalState, _) = last steps
 
---
-
 genFinish :: ProblemState -> ProblemState
 genFinish start@(ProblemState {..}) = start {problemUnwrapped = S.empty}
 
