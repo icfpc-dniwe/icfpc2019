@@ -153,9 +153,9 @@ applyPick' :: Robot -> PickAction -> Robot
 applyPick' r MPickUpManipulator = r {
     robotUnspentManips = 1 + robotUnspentManips r
 }
-applyPick' r MPickUpWheels = r -- {
---    robotUnspentWheels = 1 + robotUnspentWheels r
---}
+applyPick' r MPickUpWheels = r {
+    robotUnspentWheels = 1 + robotUnspentWheels r
+}
 applyPick' r MPickUpDrill = r {
     robotUnspentDrills = 1 + robotUnspentDrills r
 }
@@ -176,11 +176,11 @@ applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
     robotUnspentManips = max 0 $ robotUnspentManips r - 1
 }
 applyAction' r MAttachWheels = decrementBoosters $ r {
-    robotWheelsLeft = max 50 $ robotWheelsLeft r,
+    robotWheelsLeft = max 51 $ robotWheelsLeft r,
     robotUnspentWheels = max 0 $ robotUnspentWheels r - 1
 }
 applyAction' r MAttachDrill = decrementBoosters $ r {
-    robotDrillLeft = max 30 $ robotDrillLeft r,
+    robotDrillLeft = max 31 $ robotDrillLeft r,
     robotUnspentDrills = max 0 $ robotUnspentDrills r - 1
 }
 applyAction' r MPlaceBeacon = decrementBoosters $ r {
