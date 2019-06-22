@@ -1,12 +1,14 @@
 module ICFPC2019.Heuristics.Packeger where
 
+import Data.Set (Set)
+import qualified Data.Set as S
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as M
 import ICFPC2019.Types
 import ICFPC2019.Utils
 
 uncycleTrace :: Problem -> ProblemState -> [(ProblemState, Action)] -> [(ProblemState, Action)]
-uncycleTrace Problem{..} ProblemState{..} trace =
+uncycleTrace problem state trace =
   clearTrace trace $ mark M.empty trace 0
     where
       mark :: HashMap Robot (Int, Set I2) -> [(ProblemState, Action)] -> Int -> [(Int, Int)]
@@ -24,7 +26,7 @@ uncycleTrace Problem{..} ProblemState{..} trace =
       clearTrace :: [a] -> [(Int, Int)] -> [a]
       clearTrace trace marks = helper (zip [1..] trace) marks
         where
-          helper trace [] = trace
+          helper trace [] = map snd trace
           helper []    _  = []
           helper trace@((curIdx, elem):otherTrace) marks@((curBegin, curEnd):otherMarks)
             | curIdx <= curBegin = elem : helper otherTrace marks

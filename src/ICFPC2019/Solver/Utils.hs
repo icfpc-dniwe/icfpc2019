@@ -1,6 +1,8 @@
 module ICFPC2019.Solver.Utils where
 
 import Data.Maybe
+import Data.List
+import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
 import Data.Maybe
@@ -36,7 +38,7 @@ moveGetNeighbours problem@(Problem {..}) state@(ProblemState {..}) =
 getNeighbours :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours problem@(Problem {..}) state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, _) -> S.size (problemUnwrapped s) - S.size (problemUnwrapped state)) usefulSteps
   where usefulSteps =
           [ ( state
               { problemUnwrapped = newUnwrapped
