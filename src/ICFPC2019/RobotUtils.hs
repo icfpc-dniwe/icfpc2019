@@ -1,7 +1,4 @@
 module ICFPC2019.RobotUtils
-<<<<<<< HEAD
-  where
-=======
   ( move
   , rot
   , speed
@@ -16,7 +13,6 @@ module ICFPC2019.RobotUtils
   , rotateLeft
   , rotateRight
   ) where
->>>>>>> cf46e0999a5800e82d8d385a450d56be590e5d1e
 
 import Data.Set (Set)
 import qualified Data.Set as S
