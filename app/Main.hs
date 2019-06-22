@@ -12,6 +12,7 @@ import ICFPC2019.Raw
 import ICFPC2019.IO
 import ICFPC2019.Visualize
 import ICFPC2019.FastDownward
+import ICFPC2019.Skeletonize
 
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
@@ -65,6 +66,9 @@ main = do
   hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
+  skeleton <- skeletonize prob
+  hPutStrLn stderr $ showPlane skeleton
+
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
