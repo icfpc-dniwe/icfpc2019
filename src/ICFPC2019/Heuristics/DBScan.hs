@@ -15,7 +15,7 @@ fromI2 (V2 x y) = vector2 x y
 toI2 :: Point Int -> I2
 toI2 p = V2 x y
   where
-    x, y = vector p
+    x:y:oth = vector p
 
 vector2 :: Num a => a -> a -> Vector a
 vector2 x y = [x, y]
