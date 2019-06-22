@@ -28,6 +28,9 @@ data Booster = Extension
 
 type MapArray a = Array V I2 a
 
+data Orientation = E | N | W | S
+                 deriving (Show, Eq, Ord)
+
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
                    , robotBeacons :: !(Set I2)
@@ -36,15 +39,6 @@ data Robot = Robot { robotPosition :: !I2
                    , robotBeaconsLeft :: !Int
                    }
              deriving (Show, Eq, Ord, Generic)
-
---data Problem = Problem { problemMap :: !(MapArray Cell)
---                       , problemOffset :: !I2
---
---                       , problemBoosters :: !(Map I2 (Set Booster))
---                       , problemUnwrapped :: !(Set I2)
---                       , problemRobot :: !Robot
---                       }
---             deriving (Show, Eq)
 
 data Problem = Problem { problemMap :: !(MapArray Cell)
                        , problemOffset :: !I2

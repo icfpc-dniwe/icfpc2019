@@ -1,14 +1,17 @@
-module ICFPC2019.RobotUtils (
-    move
-    ,rot
-    ,speed
-    ,drillEnabled
-    ,hasUnspentBeacons
-    ,checkBoundaries
-    ,checkObstacles
-    ,applyAction
-    ,validateRobot
-    ) where
+module ICFPC2019.RobotUtils
+  ( move
+  , rot
+  , speed
+  , drillEnabled
+  , hasUnspentBeacons
+  , checkBoundaries
+  , checkObstacles
+  , applyAction
+  , validateRobot
+  , applyOrientation
+  , rotateLeft
+  , rotateRight
+  ) where
 
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -136,3 +139,22 @@ applyAction r map_ state (MTeleport b) =
     if (S.member b $ robotBeacons r)
         then Just (applyAction' r (MTeleport b))
         else Nothing
+
+-- Expects point to be turned north initially.
+applyOrientation :: Orientation -> I2 -> I2
+applyOrientation N p = p
+applyOrientation W (V2 x y) = V2 (-y) x
+applyOrientation S (V2 x y) = V2 (-x) (-y)
+applyOrientation E (V2 x y) = V2 y    (-x)
+
+rotateLeft :: Orientation -> Orientation
+rotateLeft N = W
+rotateLeft W = S
+rotateLeft S = E
+rotateLeft E = N
+
+rotateRight :: Orientation -> Orientation
+rotateRight N = E
+rotateRight W = N
+rotateRight S = W
+rotateRight E = S

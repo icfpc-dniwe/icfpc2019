@@ -1,7 +1,5 @@
 module ICFPC2019.FastDownward
   ( solveProblem
-  , SimpleAction(..)
-  , fromSimpleAction
   ) where
 
 import Data.Maybe
@@ -15,6 +13,7 @@ import qualified FastDownward as FD
 import qualified Data.Array.Repa as R
 import ICFPC2019.Types
 import ICFPC2019.Utils
+import ICFPC2019.RobotUtils
 
 -- import Debug.Trace
 
@@ -26,7 +25,8 @@ data SimpleAction = SMUp
                   | SMRight
                   | SMDown
                   | SMLeft
-                  | SMNothing
+                  | SMTurnLeft
+                  | SMTurnRight
                   deriving (Show, Eq, Ord, Bounded, Enum)
 
 fromSimpleAction :: SimpleAction -> Action
@@ -34,7 +34,8 @@ fromSimpleAction SMUp = MUp
 fromSimpleAction SMRight = MRight
 fromSimpleAction SMDown = MDown
 fromSimpleAction SMLeft = MLeft
-fromSimpleAction SMNothing = MNothing
+fromSimpleAction SMTurnLeft = MTurnLeft
+fromSimpleAction SMTurnRight = MTurnRight
 
 simplifyMap :: Set I2 -> MapArray Cell -> MapArray (Maybe SimpleCell)
 simplifyMap unwrapped arr = R.computeS $ R.fromFunction (R.extent arr) toSimple
@@ -51,47 +52,61 @@ genCells gameMap = mapM makeOne gameMap
   where makeOne Nothing = return Nothing
         makeOne (Just c) = Just <$> newVar c
 
-move :: I2 -> SimpleAction -> I2
--- move idx mov | trace ("move " ++ show idx ++ " " ++ show mov) False = undefined
-move (V2 x y) SMUp      = V2 x (y + 1)
-move (V2 x y) SMRight   = V2 (x + 1) y
-move (V2 x y) SMDown    = V2 x (y - 1)
-move (V2 x y) SMLeft    = V2 (x - 1) y
-move (V2 x y) SMNothing = V2 x y
-
-isFreeCell :: SimpleCell -> Bool
-isFreeCell SimpleFree = True
-isFreeCell _          = False
-
 testCell :: MapArray (Maybe (Var SimpleCell)) -> I2 -> Test
 testCell cells idx = fromJust (cells R.! idx) ?= SimpleWrapped
 
-solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult SimpleAction)
+solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult Action)
 solveProblem (Problem {..}) ProblemState {..} = do
   let currentMap = simplifyMap problemUnwrapped problemMap
   let curSize = R.extent currentMap
   cells <- genCells currentMap
   robotLocation <- newVar $ robotPosition problemRobot
+  robotOrientation <- newVar N
 
   let
     checkRange = R.inShapeRange (V2 0 0) (curSize - 1)
 
-    moveRobot :: SimpleAction -> Effect SimpleAction
-    moveRobot mov = do
-      curLocation <- readVar robotLocation
-      let newLocation = move curLocation mov
-      guard $ checkRange newLocation
-      guard $ isJust $ cells R.! newLocation
-      forM_ (filter checkRange $ map (curLocation +) $ S.toList $ robotManipulators problemRobot) $ \wrapped -> do
+    markLocations :: Orientation -> I2 -> Effect ()
+    markLocations newOrientation newLocation = do
+      forM_ (filter checkRange $ map (applyOrientation newOrientation . (newLocation +)) $ S.toList $ robotManipulators problemRobot) $ \wrapped -> do
         case cells R.! wrapped of
           Nothing -> return ()
           Just c -> writeVar c SimpleWrapped
+
+    moveRobot :: (I2 -> I2) -> Effect ()
+    moveRobot move = do
+      curLocation <- readVar robotLocation
+      let newLocation = move curLocation
+      guard $ checkRange newLocation
+      guard $ isJust $ cells R.! newLocation
+      curOrientation <- readVar robotOrientation
+      markLocations curOrientation newLocation
       writeVar robotLocation newLocation
-      return mov
+
+    rotateRobot :: (Orientation -> Orientation) -> Effect ()
+    rotateRobot rotate = do
+      curOrientation <- readVar robotOrientation
+      let newOrientation = rotate curOrientation
+      curLocation <- readVar robotLocation
+      markLocations newOrientation curLocation
+      writeVar robotOrientation newOrientation
+
+    applyAction :: SimpleAction -> Effect Action
+    applyAction action = do
+      case action of
+        SMUp    -> moveRobot $ \(V2 x y) -> V2 x       (y + 1)
+        SMDown  -> moveRobot $ \(V2 x y) -> V2 x       (y - 1)
+        SMLeft  -> moveRobot $ \(V2 x y) -> V2 (x - 1) y
+        SMRight -> moveRobot $ \(V2 x y) -> V2 (x + 1) y
+
+        SMTurnLeft -> rotateRobot rotateLeft
+        SMTurnRight -> rotateRobot rotateRight
+
+      return $ fromSimpleAction action
 
   solve
     defaultCfg
-    [moveRobot mov | mov <- [SMUp .. SMNothing]]
+    [applyAction mov | mov <- [minBound .. maxBound]]
     $ map (testCell cells) $ S.toList $ problemUnwrapped
 
 

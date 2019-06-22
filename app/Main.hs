@@ -20,7 +20,7 @@ solveFD prob state = do
   res <- FD.runProblem (solveProblem prob state)
   
   case res of
-    FD.Solved plan -> return $ map fromSimpleAction $ FD.totallyOrderedPlan plan
+    FD.Solved plan -> return $ FD.totallyOrderedPlan plan
     _ -> fail "Couldn't find a plan!"
 
 solveSA :: Problem -> ProblemState -> IO [Action]
