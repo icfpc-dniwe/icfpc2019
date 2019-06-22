@@ -115,17 +115,17 @@ lmEval = FD.LMCount FD.LMCountConfiguration
          { lmFactory =
              FD.LMHM FD.LMHMConfiguration
              { m = 2
-             , reasonableOrders = False
+             , reasonableOrders = True
              , onlyCausalLandmarks = False
              , disjunctiveLandmarks = True
              , conjunctiveLandmarks = True
              , noOrders = False
              }
-         , admissible = True
-         , optimal = True
+         , admissible = False
+         , optimal = False
          , pref = True
          , alm = True
-         , lpSolver = FD.CLP
+         , lpSolver = FD.CPLEX
          , transform = FD.NoTransform
          , cacheEstimates = True
          }
@@ -144,8 +144,14 @@ lmEval2 = FD.LMCount FD.LMCountConfiguration
           , optimal = False
           , pref = True
           , alm = True
-          , lpSolver = FD.CLP
+          , lpSolver = FD.CPLEX
           , transform = FD.NoTransform
+          , cacheEstimates = True
+          }
+
+goalCountEval ::  FD.Evaluator
+goalCountEval = FD.GoalCount FD.GoalCountConfiguration
+          { transform = FD.NoTransform
           , cacheEstimates = True
           }
 
@@ -187,7 +193,7 @@ mergeShrink = FD.MergeAndShrink FD.MergeAndShrinkConfiguration
   }
 
 defaultCfg :: FD.SearchEngine
-defaultCfg = eagerBFS
+defaultCfg = wAstar
 
 astar :: FD.SearchEngine
 astar = FD.AStar FD.AStarConfiguration
@@ -201,8 +207,8 @@ astar = FD.AStar FD.AStarConfiguration
 
 wAstar :: FD.SearchEngine
 wAstar = FD.LazyWeightedAStar FD.LazyWeightedAStarConfiguration
-         { evaluators = [lmEval, lmEval2]
-         , preferred = [lmEval]
+         { evaluators = [lmEval, goalCountEval]
+         , preferred = [goalCountEval]
          , reopenClosed = True
          , boost = 0
          , w = 1

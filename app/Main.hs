@@ -22,7 +22,7 @@ solveFD prob state = do
   
   case res of
     FD.Solved plan -> return $ FD.totallyOrderedPlan plan
-    _ -> fail "Couldn't find a plan!"
+    FD.Crashed a b ec -> fail $ "Couldn't find a plan: " ++ a ++ " " ++ b ++ " " ++ show ec
 
 solveSA :: Problem -> ProblemState -> IO [Action]
 solveSA prob state = do
@@ -51,7 +51,7 @@ main = do
   hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
-  solution <- solveSA prob state
+  solution <- solveSB prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
 
