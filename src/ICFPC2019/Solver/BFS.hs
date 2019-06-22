@@ -21,7 +21,7 @@ bfs getNeighbours start finishCheck = go [start] (S.singleton start) M.empty
     go [] discovered parents = Nothing
     go (curNode : seq) discovered parents =
       if finishCheck curNode
-      then Just $ traverse curNode
+      then Just $ reverse $ traverse curNode
       else go (neighboursNode ++ seq) (S.fromList neighboursNode `S.union` discovered) parents'
       where
         neighbours = map (\(node, tag, _) -> (node, tag)) . filter (\(node, _, _) -> not $ S.member node discovered) $ getNeighbours curNode
