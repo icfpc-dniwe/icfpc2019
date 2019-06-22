@@ -46,8 +46,8 @@ hasUnspentManips (Robot {..}) = robotUnspentManips > 0
 move :: I2 -> Action -> Int -> I2
 move (V2 x y) MUp s = V2 x (y+s)
 move (V2 x y) MDown s = V2 x (y-s)
-move (V2 x y) MRight s = V2 (x+s) y
-move (V2 x y) MLeft s = V2 (x-s) y
+move (V2 x y) MRight s = V2 (x-s) y
+move (V2 x y) MLeft s = V2 (x+s) y
 
 rot :: I2 -> Action -> I2
 rot (V2 x y) MTurnLeft = V2 (-y) x
