@@ -14,6 +14,7 @@ import ICFPC2019.Visualize
 import ICFPC2019.FastDownward
 
 import qualified ICFPC2019.Solver.AStar as SA
+import qualified ICFPC2019.Solver.BFS as SB
 
 solveFD :: Problem -> ProblemState -> IO [Action]
 solveFD prob state = do
@@ -26,6 +27,14 @@ solveFD prob state = do
 solveSA :: Problem -> ProblemState -> IO [Action]
 solveSA prob state = do
   let res = SA.solve prob state
+
+  case res of
+    Just plan -> return $ map snd plan
+    _ -> fail "Couldn't find a plan!"
+
+solveSB :: Problem -> ProblemState -> IO [Action]
+solveSB prob state = do
+  let res = SB.solve prob state
 
   case res of
     Just plan -> return $ map snd plan
