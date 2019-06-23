@@ -14,12 +14,6 @@ import qualified Data.Set as S
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Control.Monad
-import System.IO
-import System.Exit
-import qualified System.Process as P
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Builder as BB
-import Data.Attoparsec.ByteString.Lazy (Result(..), parse)
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Array.Repa (Z(..), (:.)(..))
@@ -27,6 +21,7 @@ import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.Unboxed as R
 import Linear.V2
 
+import DNIWEChan.IO
 import ICFPC2019.Types
 import ICFPC2019.Utils
 import ICFPC2019.IO
@@ -39,34 +34,16 @@ data Cluster = Cluster { clusterNeighbours :: !(Set Int)
              deriving (Show, Eq)
 
 
-newtype SkeletonException = SkeletonException String
-    deriving Show
-
-instance Exception SkeletonException
-
 getCoreNodes :: MapArray -> IO [I2]
 getCoreNodes cells = do
-  let processInfo = (P.proc "python/skeletonize.py" []) { P.std_in = P.CreatePipe
-                                                        , P.std_out = P.CreatePipe
-                                                        }
-  P.withCreateProcess processInfo $ \(Just pstdin) (Just pstdout) _ ph -> do
-    BB.hPutBuilder pstdin $ buildMapArray cells
-    hClose pstdin
-    tid <- myThreadId
-    _ <- forkIO $ do
-      ec <- P.waitForProcess ph
-      unless (ec == ExitSuccess) $ throwTo tid $ SkeletonException $ show ec
-    input <- BL.hGetContents pstdout
-    case parse npArray input of
-      Done _ coreNodes -> do
-        let Z :. ySize :. _xSize = R.extent coreNodes
+  coreNodes <- callSlave "python/skeletonize.py" [] (buildMapArray cells) npArray
+  let Z :. ySize :. _xSize = R.extent coreNodes
 
-            getNode y = V2 nodeX nodeY
-              where nodeX = coreNodes R.! (Z :. y :. 1)
-                    nodeY = coreNodes R.! (Z :. y :. 0)
+      getNode y = V2 nodeX nodeY
+        where nodeX = coreNodes R.! (Z :. y :. 1)
+              nodeY = coreNodes R.! (Z :. y :. 0)
               
-        return $ map getNode [0..ySize - 1]
-      Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
+  return $ map getNode [0..ySize - 1]
 
 neighbours :: MapArray -> I2 -> [I2]
 neighbours cells p =
@@ -124,7 +101,10 @@ convertSkeleton cells coreNodes = runST $ do
         Cluster { clusterNeighbours = S.empty
                 , clusterNodes = S.empty
                 }
-  fmap M.fromList $ zipWithM (\i p -> (i, ) <$> findNeighbours i emptyCluster p) [0..] coreNodes
+  res <- fmap M.fromList $ zipWithM (\i p -> (i, ) <$> findNeighbours i emptyCluster p) [0..] coreNodes
+  --let sanityCheck (clusterId, cluster) = all (\neighId -> clusterId `S.member` clusterNeighbours (res M.! neighId))  $ clusterNeighbours cluster
+  --unless (all sanityCheck $ M.toList res) $ fail "sanity check failed"
+  return res
   
 {-
 rectanglePaths :: I2 -> I2 -> [[I2]]

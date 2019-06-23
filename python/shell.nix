@@ -7,6 +7,7 @@ let pkg =
     scipy
     cython
     jupyter
+    mlrose
   ]);
     
 in let pkgs = import <nixpkgs> { };
