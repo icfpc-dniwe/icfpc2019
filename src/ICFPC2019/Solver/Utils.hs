@@ -62,25 +62,12 @@ getAllActions problem@Problem {..} state@ProblemState {..} =
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
-getNeighboursOfType problem@Problem {..} state@ProblemState {..} moves =
-  let robot = problemRobot
-      map_ = problemMap
-      newRobots = applyAction robot map_ state <$> moves
-      validRobots = mapMaybe (\(mr, mov) -> case mr of
-                                      Just r -> Just (r, mov)
-                                      Nothing -> Nothing
-                             ) $ zip newRobots moves
-      moveSpanCells r = cellsOnMoveLine (robotPosition robot) (robotPosition r)
-      validManips r pos = validManipulators map_ pos (robotManipulators r)
-      validManipsTotal r = S.toList $ foldr (S.union) S.empty $ (validManips r) <$> moveSpanCells r
-      newWrapped r = map (+ (robotPosition r)) $ validManipsTotal r
-      newState r mov = (
-          collectBoosters problem (moveSpanCells r) $ state {
-            problemRobot = r,
-            problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
-          }, mov
-        )
-  in map (uncurry newState) validRobots
+getNeighboursOfType problem@Problem {..} state@ProblemState {..} = mapMaybe tryMove
+  where
+    tryMove :: Action -> Maybe (ProblemState, Action)
+    tryMove act = case changeState problem state act of
+                    Just state' -> Just (state', act)
+                    _           -> Nothing
 
 getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} state
