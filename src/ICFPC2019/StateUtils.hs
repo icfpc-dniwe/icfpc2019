@@ -4,66 +4,61 @@ import qualified Data.HashMap.Strict as M
 import Data.Set (Set)
 import qualified Data.Set as S
 import Linear.V2
+import Debug.Trace
+
 import ICFPC2019.Utils
 import ICFPC2019.Types
 import ICFPC2019.RobotUtils
 
-collectBooster :: Problem -> ProblemState -> Booster -> ProblemState
-collectBooster problem@Problem {..} state@ProblemState {..} bst =
-  let robot = problemRobot
-      map_ = problemMap
-      executeAction action =
-        let actionResult = applyPick robot map_ state action
-        in
-          case actionResult of
-            Just r -> state { problemRobot = r }
-            Nothing -> state
-  in
-    case bst of
-      Extension -> executeAction MPickUpManipulator
-      FastWheels -> executeAction MPickUpWheels
-      Drill -> executeAction MPickUpDrill
-      Teleport -> executeAction MPickUpBeacon
-      Mysterious -> state
+collectBoosters ::  I2 -> ProblemState -> ProblemState
+collectBoosters p state@(ProblemState {..}) =
+  let (foundBoosters, newBoosters) =
+        case M.lookup p problemBoosters of
+          Nothing -> (S.empty, problemBoosters)
+          Just boosters -> (boosters, M.delete p problemBoosters)
 
-collectBoosters' :: Problem  -> [Booster] -> ProblemState -> ProblemState
-collectBoosters' _ [] s = s
-collectBoosters' problem (h:t) s = collectBoosters' problem t $ collectBooster problem s h
+      addBooster booster robot = robot { robotBoosters = M.insertWith (+) booster 1 $ robotBoosters robot }
+  
+      newRobot = foldr addBooster problemRobot foundBoosters
 
-collectBoosters :: Problem -> [I2] -> ProblemState -> ProblemState
-collectBoosters _ [] state = state
-collectBoosters problem@Problem {..} (h:t) state@ProblemState {..} = collectBoosters problem t $
-  let robot = problemRobot
-      pos = h
-      collectAt pos st = collectBoosters' problem (S.toList $ problemBoosters M.! pos) st
-      removeAt pos st = st { problemBoosters = M.delete pos problemBoosters }
-  in
-    if M.member pos problemBoosters
-      then removeAt pos $ collectAt pos state
-      else state
+  in state { problemBoosters = newBoosters
+           , problemRobot = newRobot
+           }
 
 cellsOnMoveLine :: I2 -> I2 -> [I2]
-cellsOnMoveLine (V2 x0 y0) (V2 x1 y1)
-  | x0 == x1 = if y0 < y1 then [V2 x0 y | y <- [y0..y1]]
-                          else reverse [V2 x0 y | y <- [y1..y0]]
-  | y0 == y1 = if x0 < x1 then [V2 x y0 | x <- [x0..x1]]
-                          else reverse [V2 x y0 | x <- [x1..x0]]
-  | otherwise = error $ "cellsOnMoveLine: incorrect movement line" ++ show [V2 x1 y1]
+cellsOnMoveLine a b
+  | a == b = []
+  | otherwise = go (a + d)
+  where d = signum (b - a)
+        go p
+          | p == b = [p]
+          | otherwise = p : go (p + d)
 
+changeState' :: Problem -> ProblemState -> Robot -> ProblemState
+changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = checkThings $ foldr collectBoosters newState moveSpanCells
+                   
+  where moveSpanCells = cellsOnMoveLine (robotPosition problemRobot) (robotPosition newRobot)
+        validManips pos = validManipulators problemMap pos (robotManipulators newRobot)
+        validManipsTotal = concatMap validManips $ moveSpanCells
+        --testCells = S.fromList [V2 16 0, V2 17 0, V2 18 0, V2 16 1, V2 17 1, V2 18 1]
+        testCells = S.fromList [V2 x y | x <- [21..33]
+                                       , y <- [18..19]
+                                       ]
+        checkThings a
+          -- | not $ S.null $ testCells `S.intersection` validCells =
+          | robotPosition newRobot `S.member` testCells =
+          -- | robotBoosters newRobot /= robotBoosters problemRobot && robotWheelsLeft problemRobot > 0 =
+            trace "" $
+            trace ("old robot: " ++ show problemRobot) $
+            trace ("new robot: " ++ show newRobot) $
+            trace ("new wrapped cells: " ++ show (problemUnwrapped `S.intersection` validCells)) $
+            a
+          | otherwise = a
+          where validCells = S.fromList validManipsTotal
+        newState = state { problemRobot = newRobot
+                         , problemUnwrapped = foldr S.delete problemUnwrapped validManipsTotal
+                         }
 
 changeState :: Problem -> ProblemState -> Action -> Maybe ProblemState
-changeState prob@Problem{..} state@ProblemState{..} act =
-  case applyAction problemRobot problemMap state act of
-    Just newRobot -> if isValidRobot prob newRobot
-                     then Just $ newState newRobot
-                     else Nothing
-      where
-        moveSpanCells r = cellsOnMoveLine (robotPosition problemRobot) (robotPosition r)
-        validManips r pos = validManipulators problemMap pos (robotManipulators r)
-        validManipsTotal r = S.toList $ foldr S.union S.empty $ validManips r <$> moveSpanCells r
-        newWrapped r = map (+ robotPosition r) $ validManipsTotal r
-        newState r = collectBoosters prob (moveSpanCells r) $
-                     state {problemRobot = r
-                           , problemUnwrapped = foldr S.delete problemUnwrapped $ newWrapped r
-                           }
-    _             -> Nothing
+changeState prob@Problem{..} state@(ProblemState {..}) act =
+  changeState' prob state <$> applyAction problemMap state act

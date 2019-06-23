@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad
 import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Builder as BB
@@ -14,6 +15,7 @@ import ICFPC2019.IO
 import ICFPC2019.Visualize
 import ICFPC2019.FastDownward
 import ICFPC2019.Skeletonize
+import ICFPC2019.StateUtils
 
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
@@ -54,6 +56,18 @@ solveSD prob state = do
     Just plan -> return $ concatMap snd plan
     _ -> fail "Unsolvable!"
 
+printPath :: Problem -> ProblemState -> [Action] -> IO ()
+printPath problem state0 actions = foldM_ printOne (1, state0) actions
+  where printOne (step, state) action = do
+          state' <- case changeState problem state action of
+                     Just state' -> return state'
+                     Nothing -> fail "Failed to validate"
+          hPutStrLn stderr ""
+          hPutStrLn stderr $ "Step: " ++ show step
+          hPutStrLn stderr $ "Action: " ++ show action
+          hPutStrLn stderr $ "New state: " ++ show state'
+          return (step + 1, state')
+
 main :: IO ()
 main = do
   --path <- getEnv "PATH"
@@ -75,6 +89,7 @@ main = do
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
+  printPath prob state solution
 
   BB.hPutBuilder stdout $ buildSolution solution
   putStrLn ""

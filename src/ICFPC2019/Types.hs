@@ -34,15 +34,15 @@ type MapArray = Array U I2 Bool
 data Orientation = E | N | W | S
                  deriving (Show, Eq, Ord)
 
+data Rotation = L | R
+              deriving (Show, Eq, Ord)
+
 data Robot = Robot { robotPosition :: !I2
                    , robotManipulators :: !(Set I2)
-                   , robotUnspentManips :: !Int
+                   , robotBoosters :: !(HashMap Booster Int)
                    , robotBeacons :: !(Set I2)
-                   , robotUnspentBeacons :: !Int
                    , robotDrillLeft :: !Int
-                   , robotUnspentDrills :: !Int
                    , robotWheelsLeft :: !Int
-                   , robotUnspentWheels :: !Int
                    }
              deriving (Show, Eq, Ord, Generic)
 
@@ -70,19 +70,9 @@ data Action = MUp
             | MNothing
             | MTurnRight
             | MTurnLeft
---            | MPickUpManipulator
             | MAttachManipulator !I2
---            | MPickUpWheels
             | MAttachWheels
---            | MPickUpDrill
             | MAttachDrill
---            | MPickUpBeacon
             | MPlaceBeacon
             | MTeleport !I2
             deriving (Show, Eq, Ord)
-
-data PickAction = MPickUpManipulator
-                | MPickUpWheels
-                | MPickUpDrill
-                | MPickUpBeacon
-                deriving (Show, Eq, Ord)

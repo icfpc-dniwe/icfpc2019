@@ -5,6 +5,8 @@ module ICFPC2019.Utils where
 import qualified Data.Vector as V
 import Data.Set (Set)
 import qualified Data.Set as S
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Foldable
 import Linear.V2
 import qualified Data.Array.Repa as R
@@ -59,3 +61,6 @@ indexArray arr = S.fromList $ map (R.fromIndex curShape) [0 .. R.size curShape -
 
 instance (Hashable a) => Hashable (Set a) where
   hashWithSalt salt set = hashWithSalt salt $ S.toList set
+
+instance (Hashable k, Hashable a) => Hashable (Map k a) where
+  hashWithSalt salt set = hashWithSalt salt $ M.toList set

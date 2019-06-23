@@ -48,9 +48,11 @@ getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
-      moves = [
-          MUp, MRight, MDown, MLeft,
-          MAttachWheels, MAttachDrill, MPlaceBeacon
+      moves =
+        [ MUp, MRight, MDown, MLeft
+        , MAttachWheels
+        , MPlaceBeacon
+     -- , MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
@@ -59,7 +61,9 @@ getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       map_ = problemMap
       moves = getAllMoveActions problem state
-  in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
+  in moves
+     ++ [MTurnRight, MTurnLeft]
+     ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
 getNeighboursOfType problem state = mapMaybe tryMove
