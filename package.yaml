@@ -26,6 +26,8 @@ default-extensions:
 - ScopedTypeVariables
 - OverloadedStrings
 - DeriveGeneric
+- TupleSections
+- FlexibleContexts
 
 dependencies:
 - base >= 4.7 && < 5

@@ -1,8 +1,11 @@
 module ICFPC2019.Skeletonize
   ( Cluster(..)
-  , getRawClusters
+  , getCoreNodes
+  , convertSkeleton
   ) where
 
+import Control.Concurrent
+import Control.Exception
 import Control.Monad.ST
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -28,37 +31,96 @@ import ICFPC2019.IO
 
 import Debug.Trace
 
-data Cluster = Cluster { neighbours :: !(Set Int)
-                       , points :: !(Set I2)
+data Cluster = Cluster { clusterNeighbours :: !(Set Int)
+                       , clusterNodes :: !(Set I2)
                        }
              deriving (Show, Eq)
 
-getRawClusters :: MapArray -> IO (Map Int (Set I2))
-getRawClusters cells = do
+
+data SkeletonException = SkeletonException String
+    deriving Show
+
+instance Exception SkeletonException
+
+getCoreNodes :: MapArray -> IO [I2]
+getCoreNodes cells = do
   let processInfo = (P.proc "python/skeletonize.py" []) { P.std_in = P.CreatePipe
                                                         , P.std_out = P.CreatePipe
                                                         }
   P.withCreateProcess processInfo $ \(Just pstdin) (Just pstdout) _ ph -> do
     BB.hPutBuilder pstdin $ buildMapArray cells
     hClose pstdin
-    ec <- P.waitForProcess ph
-    unless (ec == ExitSuccess) $ fail "Failed to run Python"
+    tid <- myThreadId
+    _ <- forkIO $ do
+      ec <- P.waitForProcess ph
+      unless (ec == ExitSuccess) $ throwTo tid $ SkeletonException $ show ec
     input <- BL.hGetContents pstdout
     case parse npArray input of
-      Done _ nodeParams -> do
-        let Z :. ySize :. xSize = R.extent nodeParams
+      Done _ coreNodes -> do
+        let Z :. ySize :. xSize = R.extent coreNodes
 
-            insertNode y clusters =
-              M.insertWith S.union nodeCluster (S.singleton (V2 nodeX nodeY)) clusters
-              where nodeX = nodeParams R.! (Z :. y :. 0)
-                    nodeY = nodeParams R.! (Z :. y :. 1)
-                    nodeCluster = nodeParams R.! (Z :. y :. 2)
-
-            clusters = foldr insertNode M.empty [0..ySize - 1]
-
-        return clusters
+            getNode y = V2 nodeX nodeY
+              where nodeX = coreNodes R.! (Z :. y :. 0)
+                    nodeY = coreNodes R.! (Z :. y :. 1)
+              
+        return $ map getNode [0..ySize - 1]
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
 
+neighbours :: MapArray -> I2 -> [I2]
+neighbours cells p =
+  [ np
+  | dp <- steps
+  , let np@(V2 nx ny) = p + dp
+  , nx >= 0 && nx < xSize
+  , ny >= 0 && ny < ySize
+  , cells R.! np
+  ]
+  where V2 xSize ySize = R.extent cells
+        steps = [ V2 1    0
+                , V2 0    1
+                , V2 (-1) 0
+                , V2 0    (-1)
+                ]
+
+convertSkeleton ::  MapArray -> [I2] -> Map Int Cluster
+convertSkeleton cells coreNodes = runST $ do
+  nodes <- VUM.replicate (R.size $ R.extent cells) (-1 :: Int, maxBound :: Int)
+  let size = R.extent cells
+
+  let fillNodes node [] = return ()
+      fillNodes node ((p, len) : queue) = do
+        (oldNode, oldLen) <- VUM.read nodes (R.toIndex size p)
+        if len < oldLen
+          then do
+            VUM.write nodes (R.toIndex size p) (node, len)
+            let newQueue = map (, len + 1) $ neighbours cells p
+            fillNodes node (queue ++ newQueue)
+          else fillNodes node queue
+
+  zipWithM_ (\i p -> fillNodes i [(p, 0)]) [0..] coreNodes
+
+  finalNodes <- VU.unsafeFreeze nodes
+  visited <- VUM.replicate (R.size $ R.extent cells) False
+
+  let findNeighbours node cluster@(Cluster {..}) p = do
+        let (currNode, _) = finalNodes VU.! R.toIndex size p
+        if node /= currNode
+          then return $ cluster { clusterNeighbours = S.insert currNode clusterNeighbours }
+          else do
+            isVisited <- VUM.read visited (R.toIndex size p)
+            if isVisited
+              then return cluster
+              else do
+                VUM.write visited (R.toIndex size p) True
+                let cluster' = cluster { clusterNodes = S.insert p clusterNodes }
+                foldM (findNeighbours node) cluster' $ neighbours cells p
+
+  let emptyCluster =
+        Cluster { clusterNeighbours = S.empty
+                , clusterNodes = S.empty
+                }
+  fmap M.fromList $ zipWithM (\i p -> (i, ) <$> findNeighbours i emptyCluster p) [0..] coreNodes
+  
 {-
 rectanglePaths :: I2 -> I2 -> [[I2]]
 rectanglePaths a@(V2 x y) b
@@ -82,11 +144,11 @@ convertSkeleton cells skel = runST $ do
   nodes <- VUM.replicate (R.size $ R.extent cells) 0
 
   let findBackbone backbone p = do
-        hasSkel <- VUM.read visitedSkel (R.index p)
+        hasSkel <- VUM.read visitedSkel (R.toIndex size p)
         if not hasSkel
           then return backbone
           else do
-            VUM.write visitedSkel (R.index p) False
+            VUM.write visitedSkel (R.toIndex size p) False
             let neighbours = [ np
                              , dx <- [-1..1]
                              , dy <- [-1..1]
@@ -102,11 +164,11 @@ convertSkeleton cells skel = runST $ do
         if S.null center
           then fillNodes idx clusters queue
           else do
-            currentId <- VM.read nodes (R.index p)
+            currentId <- VM.read nodes (R.toIndex size p)
         if currentId /= 0
           then fillNodes idx clusters queue
           else do
-            VM.write nodes (R.index p) idx
+            VM.write nodes (R.toIndex size p) idx
             cluster <- fillCluster idx (S.singleton p) p
             
 -}

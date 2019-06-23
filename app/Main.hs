@@ -1,5 +1,6 @@
 module Main where
 
+import qualified Data.Map.Strict as M
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Builder as BB
 import System.Environment
@@ -67,8 +68,9 @@ main = do
   --hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   --hPutStrLn stderr $ showPlane $ problemMap prob
-  --clusters <- getRawClusters $ problemMap prob
-  --hPutStrLn stderr $ show clusters
+  coreNodes <- getCoreNodes $ problemMap prob
+  let clusters = convertSkeleton (problemMap prob) coreNodes
+  hPutStrLn stderr $ show $ M.size clusters
 
   solution <- solveSA prob state
   --solution <- solveFD prob state
