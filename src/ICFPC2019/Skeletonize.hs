@@ -60,8 +60,8 @@ getCoreNodes cells = do
         let Z :. ySize :. _xSize = R.extent coreNodes
 
             getNode y = V2 nodeX nodeY
-              where nodeX = coreNodes R.! (Z :. y :. 0)
-                    nodeY = coreNodes R.! (Z :. y :. 1)
+              where nodeX = coreNodes R.! (Z :. y :. 1)
+                    nodeY = coreNodes R.! (Z :. y :. 0)
               
         return $ map getNode [0..ySize - 1]
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
@@ -84,8 +84,8 @@ neighbours cells p =
 
 convertSkeleton ::  MapArray -> [I2] -> Map Int Cluster
 convertSkeleton cells coreNodes = runST $ do
-  nodes <- VUM.replicate (R.size $ R.extent cells) (-1 :: Int, maxBound :: Int)
   let size = R.extent cells
+  nodes <- VUM.replicate (R.size size) (-1 :: Int, maxBound :: Int)
 
   let fillNodes node [] = return ()
       fillNodes node ((p, len) : queue) = do
@@ -100,7 +100,7 @@ convertSkeleton cells coreNodes = runST $ do
   zipWithM_ (\i p -> fillNodes i [(p, 0)]) [0..] coreNodes
 
   finalNodes <- VU.unsafeFreeze nodes
-  visited <- VUM.replicate (R.size $ R.extent cells) False
+  visited <- VUM.replicate (R.size size) False
 
   let findNeighbours node cluster@(Cluster {..}) p = do
         let (currNode, _) = finalNodes VU.! R.toIndex size p

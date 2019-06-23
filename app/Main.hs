@@ -69,8 +69,8 @@ main = do
   let (prob, state) = convertProblem rawProb
   --hPutStrLn stderr $ showPlane $ problemMap prob
   coreNodes <- getCoreNodes $ problemMap prob
-  --let clusters = convertSkeleton (problemMap prob) coreNodes
-  --hPutStrLn stderr $ show $ M.size clusters
+  let clusters = convertSkeleton (problemMap prob) coreNodes
+  hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
   solution <- solveSA prob state
   --solution <- solveFD prob state
