@@ -120,9 +120,9 @@ buildMapArray arr =
 
   where V2 xSize ySize = R.extent arr
 
-        showChar :: Bool -> BB.Builder
-        showChar True = BB.char7 '1'
-        showChar False = BB.char7 '0'
+        showCell :: Bool -> BB.Builder
+        showCell True = BB.char7 '1'
+        showCell False = BB.char7 '0'
 
         showLine :: Int -> BB.Builder
-        showLine y = mconcat (intersperse (BB.char7 ' ') $ map (\x -> showChar $ arr R.! V2 x y) [0..xSize - 1]) <> BB.char7 '\n'
+        showLine y = mconcat (intersperse (BB.char7 ' ') $ map (\x -> showCell $ arr R.! V2 x y) [0..xSize - 1]) <> BB.char7 '\n'

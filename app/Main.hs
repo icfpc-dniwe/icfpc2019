@@ -15,12 +15,10 @@ import ICFPC2019.IO
 import ICFPC2019.Visualize
 import ICFPC2019.FastDownward
 import ICFPC2019.Skeletonize
-import ICFPC2019.StateUtils
 
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
 import qualified ICFPC2019.Solver.DFS as SD
-import ICFPC2019.Heuristics.Packager
 import ICFPC2019.Validate
 
 solveFD :: Problem -> ProblemState -> IO [Action]
@@ -56,18 +54,6 @@ solveSD prob state = do
     Just plan -> return $ concatMap snd plan
     _ -> fail "Unsolvable!"
 
-printPath :: Problem -> ProblemState -> [Action] -> IO ()
-printPath problem state0 actions = foldM_ printOne (1, state0) actions
-  where printOne (step, state) action = do
-          state' <- case changeState problem state action of
-                     Just state' -> return state'
-                     Nothing -> fail "Failed to validate"
-          hPutStrLn stderr ""
-          hPutStrLn stderr $ "Step: " ++ show step
-          hPutStrLn stderr $ "Action: " ++ show action
-          hPutStrLn stderr $ "New state: " ++ show state'
-          return (step + 1, state')
-
 main :: IO ()
 main = do
   --path <- getEnv "PATH"
@@ -84,7 +70,7 @@ main = do
   --hPutStrLn stderr $ showPlane $ problemMap prob
   coreNodes <- getCoreNodes $ problemMap prob
   let clusters = convertSkeleton (problemMap prob) coreNodes
-  hPutStrLn stderr $ show $ M.size clusters
+  hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
   solution <- solveSA prob state
   --solution <- solveFD prob state
