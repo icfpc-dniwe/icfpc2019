@@ -95,7 +95,7 @@ getNeighboursOfType problem state = mapMaybe tryMove
 
 getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} depth state
-  | trace ("usef " ++ show (length usefulSteps)) False = undefined
+--  | trace ("usef " ++ show (length usefulSteps)) False = undefined
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
