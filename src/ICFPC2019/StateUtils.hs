@@ -36,12 +36,13 @@ cellsOnMoveLine a b
 
 changeState' :: Problem -> ProblemState -> Robot -> ProblemState
 changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = foldr collectBoosters newState moveSpanCells
-                   
   where moveSpanCells = cellsOnMoveLine (robotPosition problemRobot) (robotPosition newRobot)
         validManips pos = validManipulators problemMap state pos (robotManipulators newRobot)
         validManipsTotal = concatMap validManips $ moveSpanCells
         newState = state { problemRobot = newRobot
                          , problemUnwrapped = foldr S.delete problemUnwrapped validManipsTotal
+                         , problemDrilled = if drillEnabled problemRobot then S.union (S.fromList moveSpanCells) problemDrilled
+                                                                         else problemDrilled
                          }
 
 changeState :: Problem -> ProblemState -> Action -> Maybe ProblemState

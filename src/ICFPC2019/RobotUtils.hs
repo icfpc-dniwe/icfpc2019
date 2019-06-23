@@ -10,6 +10,7 @@ module ICFPC2019.RobotUtils
   , applyOrientation
   , rotateLeft
   , rotateRight
+  , drillEnabled
   ) where
 
 import Data.Set (Set)
