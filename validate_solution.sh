@@ -15,5 +15,5 @@ result=`cd $NODE_PROJECT_RELPATH && $NODE "$DIR/$PROBLEMS_RELPATH/$TASK_NAME.$PR
 if [[ $result == *"Success"* ]]; then
   echo "OK";
 else
-  echo result
+  echo "$result"
 fi
