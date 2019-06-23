@@ -30,6 +30,9 @@ isRotation MTurnRight = True
 isRotation MTurnLeft = True
 isRotation _ = False
 
+defaultActionCost :: Int
+defaultActionCost = 100
+
 defaultPriorities :: ActionPriority
 defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                   , (MAttachDrill, 15)
@@ -53,6 +56,15 @@ defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                     (MTurnRight, 60)
                                   , (MTurnLeft, 60)
                                   ]
+
+activePriorities :: ActionPriority -> ProblemState -> Action -> Int
+activePriorities priors ProblemState{..} MAttachDrill
+  | robotDrillLeft problemRobot > 0  = defaultActionCost
+  | otherwise                        = SM.findWithDefault defaultActionCost MAttachDrill priors
+activePriorities priors ProblemState{..} MAttachWheels
+  | robotWheelsLeft problemRobot > 0  = defaultActionCost
+  | otherwise                         = SM.findWithDefault defaultActionCost MAttachWheels priors
+activePriorities priors _ act = SM.findWithDefault defaultActionCost act priors
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@Problem {..} state@ProblemState {..} =
@@ -87,14 +99,15 @@ getNeighbours priorities problem@Problem {..} state
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
-        defaultCost = 100
-        actionPrior act = SM.findWithDefault defaultCost act priorities
+--        defaultCost = 100
+--        actionPrior act = SM.findWithDefault defaultCost act priorities
+        actionPrior = activePriorities priorities state
         drilledCells s = robotDrilled $ problemRobot s
         wrappedCells s s' = problemUnwrapped s S.\\ problemUnwrapped s'
         cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap (drilledCells s) <$> (S.toList $ wrappedCells state s)
         stateUseful newState mov =
           let wrapping = S.size (wrappedCells newState state) /= 0
-              prioritized = actionPrior mov < defaultCost
+              prioritized = actionPrior mov < defaultActionCost
               robotPosChanging = robotPosition (problemRobot newState) /= robotPosition (problemRobot state)
               rotation = isRotation mov
               ----

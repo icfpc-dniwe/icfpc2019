@@ -54,7 +54,7 @@ checkObstacles gameMap drilledCells pos =
     in or [nonObstacle, drilled]
 
 mapEdgeOrWall :: MapArray -> Set I2 -> I2 -> Bool
-mapEdgeOrWall gameMap drilledCells pos = not $ checkBoundaries gameMap pos || checkObstacles gameMap drilledCells pos
+mapEdgeOrWall gameMap drilledCells pos = not $ checkBoundaries gameMap pos && checkObstacles gameMap drilledCells pos
 
 numWalls :: MapArray -> Set I2 -> I2 -> Int
 numWalls gameMap drilledCells pos = sum $ map fromEnum [mapEdgeOrWall gameMap drilledCells (move pos orientation)
@@ -92,7 +92,7 @@ cellsInBB (V2 x1 y1) (V2 x2 y2)
     | otherwise           = [V2 x y | x <- [x2..x1], y <- [y2..y1]]
 
 obstaclesInBoundingBox :: MapArray -> Set I2 -> I2 -> I2 -> Set I2
-obstaclesInBoundingBox map_ drilledCells p1 p2 = 
+obstaclesInBoundingBox map_ drilledCells p1 p2 =
     let allCells = cellsInBB p1 p2
         obstacles = filter (not . checkObstacles map_ drilledCells) allCells
     in S.fromList obstacles
@@ -115,7 +115,7 @@ checkCellVisibility' (V2 xa ya) (V2 xb yb) sides =
 
 --checkCellVisibility :: map -> drilled cells -> src -> dst -> bool
 checkCellVisibility :: MapArray -> Set I2 -> I2 -> I2 -> Bool
-checkCellVisibility map_ drilledCells src@(V2 x0 y0) dst@(V2 x1 y1) = 
+checkCellVisibility map_ drilledCells src@(V2 x0 y0) dst@(V2 x1 y1) =
     let obstacles = obstaclesInBoundingBox map_ drilledCells src dst
         obstRects = cellToRect <$> S.toList obstacles
     in and $ checkCellVisibility' src dst <$> obstRects
@@ -128,7 +128,7 @@ manipulatorExtensionLocations manips = S.difference (foldr1 S.union $ map manipu
 
 --validManipulators :: map -> drilled cells -> pivot -> manipulators -> valid manipulators
 validManipulators :: MapArray -> Set I2 -> I2 -> Set I2 -> [I2]
-validManipulators map_ drilledCells pivot manips = 
+validManipulators map_ drilledCells pivot manips =
     let manips' = map (+ pivot) $ S.toList manips
         unfolded = filter (checkBoundaries map_) manips'
         visible = filter (checkCellVisibility map_ drilledCells pivot) unfolded
@@ -146,7 +146,7 @@ applyRotAction r action =
     }
 
 validRobot :: MapArray -> Robot -> Bool
-validRobot map_ r = 
+validRobot map_ r =
   let rpos = robotPosition r
       drill = drillEnabled r
   in checkBoundaries map_ rpos &&
