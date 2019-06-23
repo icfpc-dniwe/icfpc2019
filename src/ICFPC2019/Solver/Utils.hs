@@ -26,10 +26,10 @@ isBooster MPlaceBeacon = True
 isBooster _ = False
 
 defaultPriorities :: ActionPriority
-defaultPriorities = SM.fromList $ [ (MAttachWheels, 100)
+defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                   , (MPlaceBeacon, 50)
                                   ] ++
-                                  [ (MAttachManipulator pos, 150 - idx)
+                                  [ (MAttachManipulator pos, 10 + idx)
                                     | (idx, pos) <- zip [1 ..]
                                       [ V2 0 1
                                       , V2 0 (-1)
@@ -85,13 +85,14 @@ getNeighboursOfType problem@Problem {..} state@ProblemState {..} moves =
 getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> (- cost) - diffWrapped state s) usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - diffWrapped state s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         -- drill requires mutable map!
-        actionPrior act = SM.findWithDefault 1 act priorities
-        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || (actionPrior mov) > 1
-        usefulSteps' = filter (\(newState, mov) -> stateUseful newState mov) neighbours
+        defaultCost = 100
+        actionPrior act = SM.findWithDefault defaultCost act priorities
+        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || actionPrior mov < defaultCost
+        usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
