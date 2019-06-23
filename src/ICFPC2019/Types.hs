@@ -43,6 +43,7 @@ data Robot = Robot { robotPosition :: !I2
                    , robotBeacons :: !(Set I2)
                    , robotDrillLeft :: !Int
                    , robotWheelsLeft :: !Int
+                   , robotDrilled :: !(Set I2) -- this is logically incorrect for multiple robots, but we do not plan to clone them anyway
                    }
              deriving (Show, Eq, Ord, Generic)
 
@@ -53,7 +54,6 @@ data Problem = Problem { problemMap :: !MapArray
 
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
-                                 , problemDrilled :: !(Set I2)
                                  , problemRobot :: !Robot
                                  }
                   deriving (Show, Ord, Eq, Generic)

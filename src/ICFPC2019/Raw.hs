@@ -75,7 +75,6 @@ convertProblem (RawProblem { .. }) =
   , ProblemState { problemUnwrapped
                  , problemRobot
                  , problemBoosters
-                 , problemDrilled = S.empty
                  }
   )
   where minX = minimum (map (^. _x) rawMap)
@@ -101,6 +100,7 @@ convertProblem (RawProblem { .. }) =
                              , robotBoosters = M.empty
                              , robotDrillLeft = 0
                              , robotWheelsLeft = 0
+                             , robotDrilled = S.empty
                              }
 
         problemBoosters = M.fromListWith S.union $ map (\(booster, p) -> (p, S.singleton booster)) rawBoosters

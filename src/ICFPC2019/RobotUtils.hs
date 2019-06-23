@@ -6,6 +6,7 @@ module ICFPC2019.RobotUtils
   , rotateLeft
   , rotateRight
   , drillEnabled
+  , checkMapObstacle
   ) where
 
 import Data.Set (Set)
@@ -40,10 +41,15 @@ rot (V2 x y) R = V2 y (-x)
 checkBoundaries :: MapArray -> I2 -> Bool
 checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 
-checkObstacles :: MapArray -> ProblemState -> I2 -> Bool
-checkObstacles gameMap st pos =
-    let nonObstacle = gameMap R.! pos
-        drilled = S.member pos $ problemDrilled st
+checkMapObstacle :: MapArray -> I2 -> Bool
+checkMapObstacle gameMap pos
+    | checkBoundaries gameMap pos = gameMap R.! pos
+    | otherwise = False
+
+checkObstacles :: MapArray -> Set I2 -> I2 -> Bool
+checkObstacles gameMap drilledCells pos =
+    let nonObstacle = checkMapObstacle gameMap pos
+        drilled = S.member pos drilledCells
     in or [nonObstacle, drilled]
 
 sign :: Float -> Int
@@ -77,10 +83,10 @@ cellsInBB (V2 x1 y1) (V2 x2 y2)
     | x1 >= x2 && y1 < y2 = [V2 x y | x <- [x2..x1], y <- [y1..y2]]
     | otherwise           = [V2 x y | x <- [x2..x1], y <- [y2..y1]]
 
-obstaclesInBoundingBox :: MapArray -> ProblemState -> I2 -> I2 -> Set I2
-obstaclesInBoundingBox map_ st p1 p2 = 
+obstaclesInBoundingBox :: MapArray -> Set I2 -> I2 -> I2 -> Set I2
+obstaclesInBoundingBox map_ drilledCells p1 p2 = 
     let allCells = cellsInBB p1 p2
-        obstacles = filter (not . checkObstacles map_ st) allCells
+        obstacles = filter (not . checkObstacles map_ drilledCells) allCells
     in S.fromList obstacles
 
 -- cellToRect :: cell -> sides
@@ -99,10 +105,10 @@ checkCellVisibility' (V2 xa ya) (V2 xb yb) sides =
         b = V2 (0.5 + fromIntegral xb) (0.5 + fromIntegral yb) :: V2 Float
     in not $ any (uncurry $ segmentIntersectsLine a b) sides
 
---checkCellVisibility :: map -> src -> dst -> bool
-checkCellVisibility :: MapArray -> ProblemState -> I2 -> I2 -> Bool
-checkCellVisibility map_ st src@(V2 x0 y0) dst@(V2 x1 y1) = 
-    let obstacles = obstaclesInBoundingBox map_ st src dst
+--checkCellVisibility :: map -> drilled cells -> src -> dst -> bool
+checkCellVisibility :: MapArray -> Set I2 -> I2 -> I2 -> Bool
+checkCellVisibility map_ drilledCells src@(V2 x0 y0) dst@(V2 x1 y1) = 
+    let obstacles = obstaclesInBoundingBox map_ drilledCells src dst
         obstRects = cellToRect <$> S.toList obstacles
     in and $ checkCellVisibility' src dst <$> obstRects
 
@@ -112,12 +118,12 @@ manipulatorExtensionLocations' (V2 x y) = S.fromList [V2 (x+1) y, V2 (x-1) y, V2
 manipulatorExtensionLocations :: Set I2 -> Set I2
 manipulatorExtensionLocations manips = S.difference (foldr1 S.union $ map manipulatorExtensionLocations' $ S.toList manips) manips
 
---validManipulators :: map -> pivot -> manipulators -> valid manipulators
-validManipulators :: MapArray -> ProblemState -> I2 -> Set I2 -> [I2]
-validManipulators map_ st pivot manips = 
+--validManipulators :: map -> drilled cells -> pivot -> manipulators -> valid manipulators
+validManipulators :: MapArray -> Set I2 -> I2 -> Set I2 -> [I2]
+validManipulators map_ drilledCells pivot manips = 
     let manips' = map (+ pivot) $ S.toList manips
         unfolded = filter (checkBoundaries map_) manips'
-        visible = filter (checkCellVisibility map_ st pivot) unfolded
+        visible = filter (checkCellVisibility map_ drilledCells pivot) unfolded
     in visible
 
 decrementBoosters :: Robot -> Robot
@@ -131,23 +137,28 @@ applyRotAction r action =
   r { robotManipulators = S.fromList $ map (`rot` action) $ S.toList $ robotManipulators r
     }
 
-validRobot :: MapArray -> ProblemState -> Robot -> Bool
-validRobot map_ state r = 
+validRobot :: MapArray -> Robot -> Bool
+validRobot map_ r = 
   let rpos = robotPosition r
       drill = drillEnabled r
   in checkBoundaries map_ rpos &&
-     (drill || checkObstacles map_ state rpos)
+     (drill || checkObstacles map_ (robotDrilled r) rpos)
 
 applyMoveAction' :: MapArray -> ProblemState -> Orientation -> Int -> Robot -> (Bool, Robot)
 applyMoveAction' map_ state action 0 r = (False, r)
 applyMoveAction' map_ state action remainingSteps r =
-    let possibleRobot = r { robotPosition = move (robotPosition r) action }
+    let newPos =  move (robotPosition r) action
+        newDrilled = S.union (robotDrilled r) $
+            if drillEnabled r
+                then S.fromList $ filter (\p -> not $ checkMapObstacle map_ p) [newPos]
+                else S.empty
+        possibleRobot = r { robotPosition = newPos, robotDrilled = newDrilled }
         (_, nextRobot) = applyMoveAction' map_ state action (remainingSteps-1) possibleRobot
-    in if validRobot map_ state possibleRobot
+    in if validRobot map_ possibleRobot
        then (True, nextRobot)
        else (False, r)
 
-applyMoveAction :: MapArray -> ProblemState -> Orientation ->  Maybe Robot
+applyMoveAction :: MapArray -> ProblemState -> Orientation -> Maybe Robot
 applyMoveAction map_ state@(ProblemState {..}) action = 
     let (moved, newRobot) = applyMoveAction' map_ state action (speed problemRobot) problemRobot
     in

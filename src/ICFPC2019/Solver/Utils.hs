@@ -25,6 +25,11 @@ isBooster MAttachDrill = True
 isBooster MPlaceBeacon = True
 isBooster _ = False
 
+isRotation :: Action -> Bool
+isRotation MTurnRight = True
+isRotation MTurnLeft = True
+isRotation _ = False
+
 defaultPriorities :: ActionPriority
 defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                   , (MAttachDrill, 15)
@@ -43,6 +48,10 @@ defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                       , V2 0 3
                                       , V2 0 (-3)
                                       ]
+                                  ] ++
+                                  [
+                                    (MTurnRight, 40)
+                                  , (MTurnLeft, 40)
                                   ]
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
@@ -52,7 +61,7 @@ getAllMoveActions problem@Problem {..} state@ProblemState {..} =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
         , MPlaceBeacon
-        --, MAttachDrill
+        , MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
@@ -80,7 +89,15 @@ getNeighbours priorities problem@Problem {..} state
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         defaultCost = 100
         actionPrior act = SM.findWithDefault defaultCost act priorities
-        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || actionPrior mov < defaultCost
+        stateUseful newState mov =
+          let wrapping = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)
+              prioritized = actionPrior mov < defaultCost
+              robotPosChanging = robotPosition (problemRobot newState) /= robotPosition (problemRobot state)
+              rotation = isRotation mov
+              ----
+              useful = wrapping || prioritized
+              useless = not wrapping && not robotPosChanging && rotation
+          in useful && not useless
         usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
 
