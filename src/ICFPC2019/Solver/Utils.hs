@@ -93,30 +93,33 @@ getNeighboursOfType problem state = mapMaybe tryMove
                     Just state' -> Just (state', act)
                     _           -> Nothing
 
-getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours priorities problem@Problem {..} state
+getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours priorities problem@Problem {..} depth state
+  | trace ("usef " ++ show (length usefulSteps)) False = undefined
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
---        defaultCost = 100
---        actionPrior act = SM.findWithDefault defaultCost act priorities
+        nextBestCost :: ProblemState -> Int
+        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
+        nextBestCost s' = if depth < 2
+                          then minimum . map (\(_, _, c') -> c') $ getNeighbours priorities problem (depth + 1) s'
+                          else defaultActionCost
         actionPrior = activePriorities priorities state
         drilledCells s = robotDrilled $ problemRobot s
-        wrappedCells s s' = problemUnwrapped s' S.\\ problemUnwrapped s
+        wrappedCells s s' = problemUnwrapped s S.\\ problemUnwrapped s'
         cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap (drilledCells s) <$> (S.toList $ wrappedCells state s)
         stateUseful newState mov =
-          let wrapping = S.size (wrappedCells newState state) /= 0
+          let wrapping = S.size (wrappedCells state newState) /= 0
               prioritized = actionPrior mov < defaultActionCost
               robotPosChanging = robotPosition (problemRobot newState) /= robotPosition (problemRobot state)
               rotation = isRotation mov
               ----
               useful = wrapping || prioritized
               useless = not wrapping && not robotPosChanging && rotation
-          in {-trace ("move: " ++ show mov ++ " useful? " ++ show useful ++ " useless? " ++ show useless ++ " wrapping? " ++ show wrapping) $-}
-            useful && not useless
+          in useful && not useless
         usefulSteps' = filter (uncurry stateUseful) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) usefulSteps'
 
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
