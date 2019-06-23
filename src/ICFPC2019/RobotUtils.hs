@@ -1,3 +1,4 @@
+{-
 module ICFPC2019.RobotUtils
   ( manipulatorExtensionLocations
   , validManipulators
@@ -9,6 +10,8 @@ module ICFPC2019.RobotUtils
   , drillEnabled
   , checkMapObstacle
   ) where
+-}
+module ICFPC2019.RobotUtils where
 
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -62,7 +65,7 @@ numWalls gameMap drilledCells pos = sum $ map fromEnum [mapEdgeOrWall gameMap dr
 
 sign :: Float -> Int
 sign v
-    | abs v < 1e-7 = 0
+    | abs v < 1e-6 = 0
     | v > 0.0 = 1
     | otherwise = -1
 
@@ -83,6 +86,49 @@ segmentIntersectsLine a b (V2 xc yc) (V2 xd yd) =
         acxab = crossZ ac ab :: Float
         adxab = crossZ ad ab :: Float
     in sign acxab /= sign adxab
+
+-- pointOnLine :: line pt 0 -> line pt 1 -> point
+pointOnLine :: V2 Float -> V2 Float -> I2 -> Bool
+pointOnLine (V2 x0 y0) (V2 x1 y1) (V2 _x _y) = 
+    let x = fromIntegral _x
+        y = fromIntegral _y
+        a = y0 - y1
+        b = x1 - x0
+        c = x0 * y1 - x1 * y0
+        res = a * x + b * y + c
+    in abs res < 1e-6
+
+-- +-------+-------+-------+
+-- |       |  B    |       |
+-- |       |   x   |       |
+-- |      C|       |C'     |
+-- +-------****>****-------+
+-- |       *       *       | 
+-- |       ^       v   x   | 
+-- |       *       *    A  | 
+-- +-------****<****-------+
+-- |       |       |D      | 
+-- |       |       |       | 
+-- |       |       |       | 
+-- +-------+-------+-------+
+--
+-- Steps:
+--   1. Find C' that lies on the line
+--   2. Find the triangle, in which C' is the end of one side and the start of another (e.g. CC'D)
+--   3. Find out if CD intersects AB. If it does not, the line touches the corner of the cell, if it does, the line intersects with the cell
+lineTouchesCellCorner :: V2 Float -> V2 Float -> [(I2, I2)] -> Bool
+lineTouchesCellCorner a b sides =
+    let points = fst <$> sides
+        chkPointsOnAB = (pointOnLine a b) <$> points
+        pointsOnAB = S.fromList $ (fst) <$> (filter (snd) $ zip points chkPointsOnAB)
+    in if length pointsOnAB /= 1
+        then False
+        else 
+            let corners = zipWith (\a b -> (a, b)) sides $ drop 1 sides ++ [head sides]
+                corner = head $ filter (\((c, c'), (_, d)) -> S.member c' pointsOnAB) corners
+                ((c, _), (_, d)) = corner
+            in not $ segmentIntersectsLine a b c d
+
 
 cellsInBB :: I2 -> I2 -> [I2]
 cellsInBB (V2 x1 y1) (V2 x2 y2)
@@ -111,7 +157,9 @@ checkCellVisibility' :: I2 -> I2 -> [(I2, I2)] -> Bool
 checkCellVisibility' (V2 xa ya) (V2 xb yb) sides = 
     let a = V2 (0.5 + fromIntegral xa) (0.5 + fromIntegral ya) :: V2 Float
         b = V2 (0.5 + fromIntegral xb) (0.5 + fromIntegral yb) :: V2 Float
-    in not $ any (uncurry $ segmentIntersectsLine a b) sides
+        checkIntersections = not $ any (uncurry $ segmentIntersectsLine a b) sides
+        checkCorners = lineTouchesCellCorner a b sides
+    in checkCorners || checkIntersections
 
 --checkCellVisibility :: map -> drilled cells -> src -> dst -> bool
 checkCellVisibility :: MapArray -> Set I2 -> I2 -> I2 -> Bool
