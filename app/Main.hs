@@ -60,14 +60,15 @@ main = do
   --path <- getEnv "PATH"
   --putStrLn ("PATH=" ++ path)
   [path] <- getArgs
+  hPutStrLn stderr $ "Running task: " ++ show path
   input <- BL.readFile path
   rawProb <-
     case parse rawProblem input of
       Done _ r -> return r
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
-  hPutStrLn stderr $ show rawProb
+  --hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
-  hPutStrLn stderr $ showPlane $ problemMap prob
+  --hPutStrLn stderr $ showPlane $ problemMap prob
   clusters <- getRawClusters $ problemMap prob
   --hPutStrLn stderr $ show clusters
 
