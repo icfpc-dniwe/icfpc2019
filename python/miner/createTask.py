@@ -50,7 +50,7 @@ def genTask(specFile, outputFile):
     #     print(img)
     #     connectAreas(imgt, OBSTACLE)
     realDif = (params['vMin'] + params['vMax']) // 2
-    res = iterateComplication(img, realDif, 10, realDif)
+    res = iterateComplication(img, realDif, 25, realDif)
     if res is None:
         print('Cannot calculate task!')
         return None
@@ -59,18 +59,24 @@ def genTask(specFile, outputFile):
     img[img == MUSTFREE] = FREE
     specials = [params['mNum'], params['fNum'], params['dNum'], params['rNum'], params['cNum'], params['xNum']]
     specs = ['B', 'F', 'L', 'R', 'C', 'X']
+    #     6 10 5 1 3 4
     specialIdx = np.cumsum(specials)
     numPoints = specialIdx[-1] + 1
     specialPoints = chooseSpecialPoints(img, numPoints)
     robotPoint = specialPoints[0]
     specialPoints = specialPoints[1:]
+    plt.imshow(img)
     with open(str(outputFile), 'w') as f:
         m = ','.join([f'({first},{second})' for first, second in reversed(poly)])
         #         print('r', robotPoint)
         m += f'#({robotPoint[0]},{robotPoint[1]})##'
-        for idx, (spBg, spEd) in enumerate(zip(specialIdx[:-1], specialIdx[1:])):
-            m += ';'.join([f'{specs[idx]}({first},{second})' for first, second in specialPoints[spBg:spEd]])
-        print(m, file=f)
+        spBg = 0
+        for idx, spEd in enumerate(specialIdx):
+            boosters = [f'{specs[idx]}({first},{second})' for first, second in specialPoints[spBg:spEd]]
+            m += ';'.join(boosters)
+            m += ';'
+            spBg = spEd
+        print(m[:-1], file=f)
     return 0
 
 
