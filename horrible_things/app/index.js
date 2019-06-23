@@ -27,12 +27,12 @@ const tryOrWait = async (cb) => {
 const main = async () => {
     if (process.argv.length < 4)
     {
-        console.log("Usage: " + __filename + " task solution");
+        console.error("Usage: " + __filename + " task solution");
         return;
     }
     const taskPath = process.argv[2]
     const solutionPath = process.argv[3]
-    console.log("Checking task: '" + taskPath + "' solution: '" + solutionPath + "'");
+    console.error("Checking task: '" + taskPath + "' solution: '" + solutionPath + "'");
     
     const URL = "https://icfpcontest2019.github.io/solution_checker/"
     const options = {
@@ -48,13 +48,13 @@ const main = async () => {
 
     const loadFile = async (input, filePath) => {
         const { mtimeMs: lastModified, size } = await statAsync(filePath);
-        const text = await readFileAsync(filePath);
+        const text = await readFileAsync(filePath, 'utf8');
         const file = new window.File(
             [text],
             path.basename(filePath),
             {
                 lastModified,
-                type: mime.lookup(filePath) || '',
+                type: "text/plain",
             }
         );
         const fileListImpl = _FileList.createImpl();
@@ -72,19 +72,36 @@ const main = async () => {
         const btnSubmitTask = document.getElementById("submit_task");
         const btnSubmitSolution = document.getElementById("submit_solution");
         const btnCheck = document.getElementById("execute_solution");
-        const outputField = document.getElementById("output");
-	      if (!(btnSubmitTask && btnSubmitSolution && btnCheck && outputField)) return;
+        let outputField = document.getElementById("output");
+	    if (!(btnSubmitTask && btnSubmitSolution && btnCheck && outputField)) return;
 
+        outputField.textContent = "";
+        console.error("uploading task file...");
         await loadFile(btnSubmitTask, taskPath);
-        btnSubmitTask.click();
+        btnSubmitTask.onchange();
+        await tryOrWait(async() => {
+            let text = outputField.textContent;
+            if (!text.startsWith("Done") && !text.startsWith("Fail")) return;
+            console.error(text);
+            return true;
+        });
 
+        outputField.textContent = "";
+        console.error("uploading solution file...");
         await loadFile(btnSubmitSolution, solutionPath);
-        btnSubmitSolution.click();
+        btnSubmitSolution.onchange();
+        await tryOrWait(async() => {
+            let text = outputField.textContent;
+            if (!text.startsWith("Done") && !text.startsWith("Fail")) return;
+            console.error(text);
+            return true;
+        });
 
+        outputField.textContent = "";
+        console.error("checking solution...");
         btnCheck.click();
-
         return await tryOrWait(async () => {
-            if (outputField.textContent.length === 0) return;
+            if (!outputField.textContent.startsWith("Fail") && !outputField.textContent.startsWith("Succ")) return;
             return outputField.textContent;
         })
     });
