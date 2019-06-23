@@ -183,11 +183,11 @@ applyAction' r (MAttachManipulator m) = decrementBoosters $ r {
     robotUnspentManips = max 0 $ robotUnspentManips r - 1
 }
 applyAction' r MAttachWheels = decrementBoosters $ r {
-    robotWheelsLeft = max 51 $ robotWheelsLeft r,
+    robotWheelsLeft = 51,
     robotUnspentWheels = max 0 $ robotUnspentWheels r - 1
 }
 applyAction' r MAttachDrill = decrementBoosters $ r {
-    robotDrillLeft = max 31 $ robotDrillLeft r,
+    robotDrillLeft = 31,
     robotUnspentDrills = max 0 $ robotUnspentDrills r - 1
 }
 applyAction' r MPlaceBeacon = decrementBoosters $ r {

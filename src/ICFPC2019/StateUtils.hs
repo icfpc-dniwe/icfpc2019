@@ -44,10 +44,10 @@ collectBoosters problem@Problem {..} (h:t) state@ProblemState {..} = collectBoos
 
 cellsOnMoveLine :: I2 -> I2 -> [I2]
 cellsOnMoveLine (V2 x0 y0) (V2 x1 y1)
-  | x0 == x1 = if y0 < y1 then [V2 x0 y | y <- [(y0+1)..y1]]
-                          else [V2 x0 y | y <- [y1..(y0-1)]]
-  | y0 == y1 = if x0 < x1 then [V2 x y0 | x <- [(x0+1)..x1]]
-                          else [V2 x y0 | x <- [x1..(x0-1)]]
+  | x0 == x1 = if y0 < y1 then [V2 x0 y | y <- [y0..y1]]
+                          else reverse [V2 x0 y | y <- [y1..y0]]
+  | y0 == y1 = if x0 < x1 then [V2 x y0 | x <- [x0..x1]]
+                          else reverse [V2 x y0 | x <- [x1..x0]]
   | otherwise = error $ "cellsOnMoveLine: incorrect movement line" ++ show [V2 x1 y1]
 
 
