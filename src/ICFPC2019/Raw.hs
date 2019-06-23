@@ -73,6 +73,7 @@ convertProblem (RawProblem { .. }) =
   , ProblemState { problemUnwrapped
                  , problemRobot
                  , problemBoosters
+                 , problemDrilled = S.empty
                  }
   )
   where minX = minimum (map (^. _x) rawMap)

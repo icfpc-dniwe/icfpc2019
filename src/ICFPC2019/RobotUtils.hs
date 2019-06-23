@@ -44,8 +44,11 @@ rot (V2 x y) R = V2 y (-x)
 checkBoundaries :: MapArray -> I2 -> Bool
 checkBoundaries gameMap = R.inShapeRange (V2 0 0) (R.extent gameMap - 1)
 
-checkObstacles :: MapArray -> I2 -> Bool
-checkObstacles gameMap pos = gameMap R.! pos
+checkObstacles :: MapArray -> ProblemState -> I2 -> Bool
+checkObstacles gameMap st pos =
+    let nonObstacle = gameMap R.! pos
+        drilled = S.member pos $ problemDrilled st
+    in or [nonObstacle, drilled]
 
 sign :: Float -> Int
 sign v
@@ -78,10 +81,10 @@ cellsInBB (V2 x1 y1) (V2 x2 y2)
     | x1 >= x2 && y1 < y2 = [V2 x y | x <- [x2..x1], y <- [y1..y2]]
     | otherwise           = [V2 x y | x <- [x2..x1], y <- [y2..y1]]
 
-obstaclesInBoundingBox :: MapArray -> I2 -> I2 -> Set I2
-obstaclesInBoundingBox map_ p1 p2 = 
+obstaclesInBoundingBox :: MapArray -> ProblemState -> I2 -> I2 -> Set I2
+obstaclesInBoundingBox map_ st p1 p2 = 
     let allCells = cellsInBB p1 p2
-        obstacles = filter (not . checkObstacles map_) allCells
+        obstacles = filter (not . checkObstacles map_ st) allCells
     in S.fromList obstacles
 
 -- cellToRect :: cell -> sides
@@ -101,9 +104,9 @@ checkCellVisibility' (V2 xa ya) (V2 xb yb) sides =
     in not $ any (uncurry $ segmentIntersectsLine a b) sides
 
 --checkCellVisibility :: map -> src -> dst -> bool
-checkCellVisibility :: MapArray -> I2 -> I2 -> Bool
-checkCellVisibility map_ src@(V2 x0 y0) dst@(V2 x1 y1) = 
-    let obstacles = obstaclesInBoundingBox map_ src dst
+checkCellVisibility :: MapArray -> ProblemState -> I2 -> I2 -> Bool
+checkCellVisibility map_ st src@(V2 x0 y0) dst@(V2 x1 y1) = 
+    let obstacles = obstaclesInBoundingBox map_ st src dst
         obstRects = cellToRect <$> S.toList obstacles
     in and $ checkCellVisibility' src dst <$> obstRects
 
@@ -114,11 +117,11 @@ manipulatorExtensionLocations :: Set I2 -> Set I2
 manipulatorExtensionLocations manips = S.difference (foldr1 S.union $ map manipulatorExtensionLocations' $ S.toList manips) manips
 
 --validManipulators :: map -> pivot -> manipulators -> valid manipulators
-validManipulators :: MapArray -> I2 -> Set I2 -> [I2]
-validManipulators map_ pivot manips = 
+validManipulators :: MapArray -> ProblemState -> I2 -> Set I2 -> [I2]
+validManipulators map_ st pivot manips = 
     let manips' = map (+ pivot) $ S.toList manips
         unfolded = filter (checkBoundaries map_) manips'
-        visible = filter (checkCellVisibility map_ pivot) unfolded
+        visible = filter (checkCellVisibility map_ st pivot) unfolded
     in visible
 
 decrementBoosters :: Robot -> Robot
@@ -137,7 +140,7 @@ validRobot map_ state r =
   let rpos = robotPosition r
       drill = drillEnabled r
   in checkBoundaries map_ rpos &&
-     (drill || checkObstacles map_ rpos)
+     (drill || checkObstacles map_ state rpos)
 
 applyMoveAction' :: MapArray -> ProblemState -> Orientation -> Int -> Robot -> (Bool, Robot)
 applyMoveAction' map_ state action 0 r = (False, r)
@@ -178,7 +181,7 @@ applyAction map_ state@(ProblemState { problemRobot = r }) action = decrementBoo
               let applyAttach r' = r' { robotManipulators = S.insert m $ robotManipulators r' }
               in if not $ S.member m $ robotManipulators r
                  then applyAttach <$> useBooster Extension r
-                 else  Nothing
+                 else Nothing
             MAttachWheels ->
               let applyAttach r' = r' { robotWheelsLeft = 51 + robotWheelsLeft r }
               in applyAttach <$> useBooster FastWheels r

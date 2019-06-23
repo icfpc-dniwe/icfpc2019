@@ -53,6 +53,7 @@ data Problem = Problem { problemMap :: !MapArray
 
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
+                                 , problemDrilled :: !(Set I2)
                                  , problemRobot :: !Robot
                                  }
                   deriving (Show, Ord, Eq, Generic)

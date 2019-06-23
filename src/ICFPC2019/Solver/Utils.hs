@@ -27,6 +27,7 @@ isBooster _ = False
 
 defaultPriorities :: ActionPriority
 defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
+                                  , (MAttachDrill, 15)
                                   , (MPlaceBeacon, 50)
                                   ] ++
                                   [ (MAttachManipulator pos, 10 + idx)
@@ -52,7 +53,7 @@ getAllMoveActions problem@Problem {..} state@ProblemState {..} =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
         , MPlaceBeacon
-     -- , MAttachDrill
+        , MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
@@ -79,7 +80,6 @@ getNeighbours priorities problem@Problem {..} state
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - diffWrapped state s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
-        -- drill requires mutable map!
         defaultCost = 100
         actionPrior act = SM.findWithDefault defaultCost act priorities
         stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || actionPrior mov < defaultCost

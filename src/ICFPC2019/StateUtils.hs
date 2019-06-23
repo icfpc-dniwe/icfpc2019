@@ -38,7 +38,7 @@ changeState' :: Problem -> ProblemState -> Robot -> ProblemState
 changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = checkThings $ foldr collectBoosters newState moveSpanCells
                    
   where moveSpanCells = cellsOnMoveLine (robotPosition problemRobot) (robotPosition newRobot)
-        validManips pos = validManipulators problemMap pos (robotManipulators newRobot)
+        validManips pos = validManipulators problemMap state pos (robotManipulators newRobot)
         validManipsTotal = concatMap validManips $ moveSpanCells
         --testCells = S.fromList [V2 16 0, V2 17 0, V2 18 0, V2 16 1, V2 17 1, V2 18 1]
         testCells = S.fromList [V2 x y | x <- [21..33]
