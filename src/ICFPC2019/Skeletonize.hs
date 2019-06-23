@@ -82,7 +82,9 @@ neighbours cells p =
                 , V2 0    (-1)
                 ]
 
-convertSkeleton ::  MapArray -> [I2] -> Map Int Cluster
+type ClusterMap = Map Int Cluster
+
+convertSkeleton ::  MapArray -> [I2] -> ClusterMap
 convertSkeleton cells coreNodes = runST $ do
   let size = R.extent cells
   nodes <- VUM.replicate (R.size size) (-1 :: Int, maxBound :: Int)
