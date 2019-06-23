@@ -19,6 +19,7 @@ import ICFPC2019.Skeletonize
 import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
 import qualified ICFPC2019.Solver.DFS as SD
+import qualified ICFPC2019.Solver.Skeleton as SS
 import ICFPC2019.Validate
 
 solveFD :: Problem -> ProblemState -> IO [Action]
@@ -44,6 +45,14 @@ solveSB prob state = do
 
   case res of
     Just plan -> return $ concatMap snd plan
+    _ -> fail "Unsolvable!"
+
+solveSS :: Problem -> ClusterMap -> ProblemState -> IO [Action]
+solveSS prob clusters state = do
+  let res = SS.solve prob clusters state
+
+  case res of
+    Just plan -> return $ map snd plan
     _ -> fail "Unsolvable!"
 
 solveSD :: Problem -> ProblemState -> IO [Action]
@@ -72,6 +81,7 @@ main = do
   let clusters = convertSkeleton (problemMap prob) coreNodes
   hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
+  --solution <- solveSS prob clusters state
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
