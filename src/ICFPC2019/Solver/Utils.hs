@@ -75,12 +75,14 @@ getNeighboursOfType problem state = mapMaybe tryMove
 getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - diffWrapped state s) usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         defaultCost = 100
         actionPrior act = SM.findWithDefault defaultCost act priorities
-        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || actionPrior mov < defaultCost
+        wrappedCells s s' = problemUnwrapped s S.\\ problemUnwrapped s'
+        cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap s <$> (S.toList $ wrappedCells state s)
+        stateUseful newState mov = S.size (wrappedCells newState state) /= 0 || actionPrior mov < defaultCost
         usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
 

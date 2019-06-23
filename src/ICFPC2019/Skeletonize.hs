@@ -37,7 +37,7 @@ data Cluster = Cluster { clusterNeighbours :: !(Set Int)
              deriving (Show, Eq)
 
 
-data SkeletonException = SkeletonException String
+newtype SkeletonException = SkeletonException String
     deriving Show
 
 instance Exception SkeletonException

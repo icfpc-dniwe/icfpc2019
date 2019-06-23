@@ -5,6 +5,7 @@ module ICFPC2019.RobotUtils
   , applyOrientation
   , rotateLeft
   , rotateRight
+  , numWalls
   , drillEnabled
   ) where
 
@@ -46,6 +47,13 @@ checkObstacles gameMap st pos =
         drilled = S.member pos $ problemDrilled st
     in or [nonObstacle, drilled]
 
+mapEdgeOrWall :: MapArray -> ProblemState -> I2 -> Bool
+mapEdgeOrWall gameMap state pos = not $ checkBoundaries gameMap pos || checkObstacles gameMap state pos
+
+numWalls :: MapArray -> ProblemState -> I2 -> Int
+numWalls gameMap state pos = sum $ map fromEnum [mapEdgeOrWall gameMap state (move pos orientation)
+                                                | orientation <- [E, N, W, S]]
+
 sign :: Float -> Int
 sign v
     | abs v < 1e-7 = 0
@@ -78,7 +86,7 @@ cellsInBB (V2 x1 y1) (V2 x2 y2)
     | otherwise           = [V2 x y | x <- [x2..x1], y <- [y2..y1]]
 
 obstaclesInBoundingBox :: MapArray -> ProblemState -> I2 -> I2 -> Set I2
-obstaclesInBoundingBox map_ st p1 p2 = 
+obstaclesInBoundingBox map_ st p1 p2 =
     let allCells = cellsInBB p1 p2
         obstacles = filter (not . checkObstacles map_ st) allCells
     in S.fromList obstacles
@@ -101,7 +109,7 @@ checkCellVisibility' (V2 xa ya) (V2 xb yb) sides =
 
 --checkCellVisibility :: map -> src -> dst -> bool
 checkCellVisibility :: MapArray -> ProblemState -> I2 -> I2 -> Bool
-checkCellVisibility map_ st src@(V2 x0 y0) dst@(V2 x1 y1) = 
+checkCellVisibility map_ st src@(V2 x0 y0) dst@(V2 x1 y1) =
     let obstacles = obstaclesInBoundingBox map_ st src dst
         obstRects = cellToRect <$> S.toList obstacles
     in and $ checkCellVisibility' src dst <$> obstRects
@@ -114,7 +122,7 @@ manipulatorExtensionLocations manips = S.difference (foldr1 S.union $ map manipu
 
 --validManipulators :: map -> pivot -> manipulators -> valid manipulators
 validManipulators :: MapArray -> ProblemState -> I2 -> Set I2 -> [I2]
-validManipulators map_ st pivot manips = 
+validManipulators map_ st pivot manips =
     let manips' = map (+ pivot) $ S.toList manips
         unfolded = filter (checkBoundaries map_) manips'
         visible = filter (checkCellVisibility map_ st pivot) unfolded
