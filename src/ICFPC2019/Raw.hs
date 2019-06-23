@@ -17,6 +17,8 @@ import Linear.V2
 
 import ICFPC2019.Types
 import ICFPC2019.Utils
+
+import Debug.Trace
  
 type RectilinearPoly = [I2]
 
@@ -103,7 +105,7 @@ convertProblem (RawProblem { .. }) =
         problemBoosters = M.fromListWith S.union $ map (\(booster, p) -> (p, S.singleton booster)) rawBoosters
 
         (problemUnwrapped, problemMap) = runST $ do
-          let borderPoints = foldr1 S.union $ map (foldr1 S.union . map (uncurry lineVecs) . rectangle) (rawMap : rawObstacles)
+          let borderPoints = foldr1 S.union $ map (foldr1 S.union . map (uncurry lineVecs) . rectangle . map (subtract offset)) (rawMap : rawObstacles)
 
           cells <- VUM.replicate (R.size mapSize) False
 
