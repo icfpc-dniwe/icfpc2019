@@ -238,10 +238,10 @@ applyAction map_ state@(ProblemState { problemRobot = r }) action = decrementBoo
             MDown -> applyMoveAction map_ state S
             MLeft -> applyMoveAction map_ state W
             MRight -> applyMoveAction map_ state E
-            MTurnRight -> Just $ applyRotAction (problemRobot state) R
-            MTurnLeft -> Just $ applyRotAction (problemRobot state) L
+            MTurnRight -> Just $ applyRotAction r R
+            MTurnLeft -> Just $ applyRotAction r L
             MAttachManipulator m ->
-              let applyAttach r' = r' { robotManipulators = S.insert m $ robotManipulators r' }
+              let applyAttach r' = r' { robotManipulators = S.insert m $ robotManipulators r }
               in if not $ S.member m $ robotManipulators r
                  then applyAttach <$> useBooster Extension r
                  else Nothing
@@ -252,7 +252,7 @@ applyAction map_ state@(ProblemState { problemRobot = r }) action = decrementBoo
               let applyAttach r' = r' { robotDrillLeft = 30 + max 1 (robotDrillLeft r) }
               in applyAttach <$> useBooster Drill r
             MPlaceBeacon ->
-              let applyAttach r' = r' { robotBeacons = S.insert bpos $ robotBeacons r' }
+              let applyAttach r' = r' { robotBeacons = S.insert bpos $ robotBeacons r }
                   bpos = robotPosition r
               in if not $ S.member bpos $ robotBeacons r
                  then applyAttach <$> useBooster Teleport r

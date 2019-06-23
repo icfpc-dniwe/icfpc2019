@@ -27,7 +27,7 @@ collectBoosters p state@(ProblemState {..}) =
 
 cellsOnMoveLine :: I2 -> I2 -> [I2]
 cellsOnMoveLine a b
-  | a == b = []
+  | a == b = [a]
   | otherwise = go (a + d)
   where d = signum (b - a)
         go p

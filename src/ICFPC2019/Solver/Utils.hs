@@ -103,7 +103,7 @@ getNeighbours priorities problem@Problem {..} state
 --        actionPrior act = SM.findWithDefault defaultCost act priorities
         actionPrior = activePriorities priorities state
         drilledCells s = robotDrilled $ problemRobot s
-        wrappedCells s s' = problemUnwrapped s S.\\ problemUnwrapped s'
+        wrappedCells s s' = problemUnwrapped s' S.\\ problemUnwrapped s
         cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap (drilledCells s) <$> (S.toList $ wrappedCells state s)
         stateUseful newState mov =
           let wrapping = S.size (wrappedCells newState state) /= 0
@@ -113,9 +113,10 @@ getNeighbours priorities problem@Problem {..} state
               ----
               useful = wrapping || prioritized
               useless = not wrapping && not robotPosChanging && rotation
-          in useful && not useless
+          in {-trace ("move: " ++ show mov ++ " useful? " ++ show useful ++ " useless? " ++ show useless ++ " wrapping? " ++ show wrapping) $-}
+            useful && not useless
         usefulSteps' = filter (uncurry stateUseful) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
 
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
