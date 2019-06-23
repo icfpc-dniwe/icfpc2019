@@ -143,6 +143,13 @@ obstaclesInBoundingBox map_ drilledCells p1 p2 =
         obstacles = filter (not . checkObstacles map_ drilledCells) allCells
     in S.fromList obstacles
 
+boostersInBoundingBox :: MapArray -> ProblemState -> I2 -> I2 -> Set I2
+boostersInBoundingBox map_ st p1 p2 = 
+    let allCells = cellsInBB p1 p2
+        validCells = filter (checkMapObstacle map_) allCells
+        boosters = filter (\pos -> M.member pos $ problemBoosters st) validCells
+    in S.fromList boosters
+
 -- cellToRect :: cell -> sides
 cellToRect :: I2 -> [(I2, I2)]
 cellToRect (V2 x y) =

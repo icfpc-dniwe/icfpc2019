@@ -96,6 +96,7 @@ getNeighboursOfType problem state = mapMaybe tryMove
 getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} depth state
 --  | trace ("usef " ++ show (length usefulSteps)) False = undefined
+  | hasBoostersInProximity 4 = collectBoosterSteps $ head $ visibleBoostersInProximity 4
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
@@ -123,8 +124,17 @@ getNeighbours priorities problem@Problem {..} depth state
 
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
-
         hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
+
+        visibleBoostersInProximity maxDest =
+          let rpos = robotPosition $ problemRobot state
+              delta = (V2 maxDest maxDest)
+              boosters = boostersInBoundingBox problemMap state (rpos - delta) $ rpos + delta
+          in filter (\bpos -> checkCellVisibility problemMap (drilledCells state) rpos bpos) $ S.toList boosters
+        hasBoostersInProximity maxDest = any (>0) $ visibleBoostersInProximity maxDest
+        collectBoosterSteps boosterPos = map convertSteps $ maybeToList $ bfs moveNeighbours state $ hasCollectedBooster boosterPos
+        hasCollectedBooster pos state' = M.member pos (problemBoosters state') /= M.member pos (problemBoosters state) 
+
         convertSteps steps = (finalState, actions, cost)
           where actions = map snd steps
                 cost = length steps
