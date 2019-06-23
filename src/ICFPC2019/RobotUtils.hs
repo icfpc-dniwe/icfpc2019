@@ -198,10 +198,10 @@ applyAction map_ state@(ProblemState { problemRobot = r }) action = decrementBoo
                  then applyAttach <$> useBooster Extension r
                  else Nothing
             MAttachWheels ->
-              let applyAttach r' = r' { robotWheelsLeft = 51 + robotWheelsLeft r }
+              let applyAttach r' = r' { robotWheelsLeft = 50 + max 1 (robotWheelsLeft r) }
               in applyAttach <$> useBooster FastWheels r
             MAttachDrill ->
-              let applyAttach r' = r' { robotDrillLeft = 31 + robotDrillLeft r }
+              let applyAttach r' = r' { robotDrillLeft = 30 + max 1 (robotDrillLeft r) }
               in applyAttach <$> useBooster Drill r
             MPlaceBeacon ->
               let applyAttach r' = r' { robotBeacons = S.insert bpos $ robotBeacons r' }

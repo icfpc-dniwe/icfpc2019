@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 NODE="npm start"
 NODE_PROJECT_RELPATH="./horrible_things"
