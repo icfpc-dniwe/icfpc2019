@@ -5,6 +5,7 @@ module ICFPC2019.RobotUtils
   , applyOrientation
   , rotateLeft
   , rotateRight
+  , numWalls
   , drillEnabled
   , checkMapObstacle
   ) where
@@ -51,6 +52,13 @@ checkObstacles gameMap drilledCells pos =
     let nonObstacle = checkMapObstacle gameMap pos
         drilled = S.member pos drilledCells
     in or [nonObstacle, drilled]
+
+mapEdgeOrWall :: MapArray -> Set I2 -> I2 -> Bool
+mapEdgeOrWall gameMap drilledCells pos = not $ checkBoundaries gameMap pos || checkObstacles gameMap drilledCells pos
+
+numWalls :: MapArray -> Set I2 -> I2 -> Int
+numWalls gameMap drilledCells pos = sum $ map fromEnum [mapEdgeOrWall gameMap drilledCells (move pos orientation)
+                                                | orientation <- [E, N, W, S]]
 
 sign :: Float -> Int
 sign v

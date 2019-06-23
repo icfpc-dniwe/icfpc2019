@@ -50,8 +50,8 @@ defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
                                       ]
                                   ] ++
                                   [
-                                    (MTurnRight, 40)
-                                  , (MTurnLeft, 40)
+                                    (MTurnRight, 60)
+                                  , (MTurnLeft, 60)
                                   ]
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
@@ -84,13 +84,16 @@ getNeighboursOfType problem state = mapMaybe tryMove
 getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} state
   | null usefulSteps = moveoutSteps
-  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - diffWrapped state s) usefulSteps
+  | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         defaultCost = 100
         actionPrior act = SM.findWithDefault defaultCost act priorities
+        drilledCells s = robotDrilled $ problemRobot s
+        wrappedCells s s' = problemUnwrapped s S.\\ problemUnwrapped s'
+        cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap (drilledCells s) <$> (S.toList $ wrappedCells state s)
         stateUseful newState mov =
-          let wrapping = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)
+          let wrapping = S.size (wrappedCells newState state) /= 0
               prioritized = actionPrior mov < defaultCost
               robotPosChanging = robotPosition (problemRobot newState) /= robotPosition (problemRobot state)
               rotation = isRotation mov
