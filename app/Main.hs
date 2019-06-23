@@ -34,9 +34,7 @@ solveSA prob state = do
   let res = SA.solve prob state
 
   case res of
-    Just plan -> case validate prob state (concatMap snd plan) of
-                  Nothing -> return $ concatMap snd plan
-                  Just (errorIdx, errorAct) -> fail $ "illegale move " ++ show errorAct ++ " on index " ++ show errorIdx
+    Just plan -> return $ concatMap snd plan
     _ -> fail "Unsolvable!"
 
 solveSB :: Problem -> ProblemState -> IO [Action]
@@ -68,7 +66,7 @@ main = do
   hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
   hPutStrLn stderr $ showPlane $ problemMap prob
-  clusters <- getRawClusters $ problemMap prob
+--  clusters <- getRawClusters $ problemMap prob
   --hPutStrLn stderr $ show clusters
 
   solution <- solveSA prob state

@@ -89,9 +89,10 @@ getNeighbours priorities problem@Problem {..} state
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         -- drill requires mutable map!
-        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || isBooster mov && mov /= MAttachDrill
+        actionPrior act = SM.findWithDefault 1 act priorities
+        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || (actionPrior mov) > 1
         usefulSteps' = filter (\(newState, mov) -> stateUseful newState mov) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], SM.findWithDefault 1 s priorities)) usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
@@ -111,14 +112,5 @@ diffWrapped startState endState = S.size startUnWrapped - S.size endUnWrapped
     startUnWrapped = problemUnwrapped startState
     endUnWrapped = problemUnwrapped endState
 
---diffTurn :: Int -> ProblemState -> ProblemState -> Int
---diffTurn mult startState endState = mult * (problemTurn endState - problemTurn startState)
-
 addHeuristics :: (ProblemState -> ProblemState -> Int) -> (ProblemState -> ProblemState -> Int) -> ProblemState -> ProblemState -> Int
 addHeuristics heur1 heur2 start end = heur1 start end + heur2 start end
-
---metric :: ProblemState -> ProblemState -> Int
---metric start end = tu + wr
---  where
---    wr = diffWrapped start end
---    tu = diffTurn 1 start end

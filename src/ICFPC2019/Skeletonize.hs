@@ -53,7 +53,7 @@ getRawClusters cells = do
               where nodeX = nodeParams R.! (Z :. y :. 0)
                     nodeY = nodeParams R.! (Z :. y :. 1)
                     nodeCluster = nodeParams R.! (Z :. y :. 2)
-              
+
             clusters = foldr insertNode M.empty [0..ySize - 1]
 
         return clusters
