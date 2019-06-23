@@ -1,0 +1,16 @@
+{
+  "name": "horrible_things",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "addFileList": "git+https://bitbucket.org/william_rusnack/addfilelist.git",
+    "jsdom": "*"
+  }
+}
