@@ -76,7 +76,7 @@ const main = async () => {
 	    if (!(btnSubmitTask && btnSubmitSolution && btnCheck && outputField)) return;
 
         outputField.textContent = "";
-        console.error("uploading task file...");
+        //console.error("uploading task file...");
         await loadFile(btnSubmitTask, taskPath);
         btnSubmitTask.onchange();
         await tryOrWait(async() => {
@@ -87,7 +87,7 @@ const main = async () => {
         });
 
         outputField.textContent = "";
-        console.error("uploading solution file...");
+        //console.error("uploading solution file...");
         await loadFile(btnSubmitSolution, solutionPath);
         btnSubmitSolution.onchange();
         await tryOrWait(async() => {
@@ -98,7 +98,7 @@ const main = async () => {
         });
 
         outputField.textContent = "";
-        console.error("checking solution...");
+        //console.error("checking solution...");
         btnCheck.click();
         return await tryOrWait(async () => {
             if (!outputField.textContent.startsWith("Fail") && !outputField.textContent.startsWith("Succ")) return;
