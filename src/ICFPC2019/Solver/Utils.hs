@@ -101,9 +101,11 @@ getNeighbours priorities problem@Problem {..} depth state
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         nextBestCost :: ProblemState -> Int
-        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
+--        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
         nextBestCost s' = if depth < 2
-                          then minimum . map (\(_, _, c') -> c') $ getNeighbours priorities problem (depth + 1) s'
+                          then case getNeighbours priorities problem (depth + 1) s' of
+                            [] -> -1000 * depth
+                            elems -> minimum . map (\(_, _, c') -> c') $ elems
                           else defaultActionCost
         actionPrior = activePriorities priorities state
         drilledCells s = robotDrilled $ problemRobot s
