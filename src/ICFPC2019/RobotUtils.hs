@@ -1,10 +1,5 @@
 module ICFPC2019.RobotUtils
-  ( move
-  , rot
-  , speed
-  , checkBoundaries
-  , checkObstacles
-  , manipulatorExtensionLocations
+  ( manipulatorExtensionLocations
   , validManipulators
   , applyAction
   , applyOrientation

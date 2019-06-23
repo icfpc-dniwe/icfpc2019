@@ -28,6 +28,7 @@ default-extensions:
 - DeriveGeneric
 - TupleSections
 - FlexibleContexts
+- MultiWayIf
 
 dependencies:
 - base >= 4.7 && < 5

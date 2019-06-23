@@ -57,7 +57,7 @@ getCoreNodes cells = do
     input <- BL.hGetContents pstdout
     case parse npArray input of
       Done _ coreNodes -> do
-        let Z :. ySize :. xSize = R.extent coreNodes
+        let Z :. ySize :. _xSize = R.extent coreNodes
 
             getNode y = V2 nodeX nodeY
               where nodeX = coreNodes R.! (Z :. y :. 0)

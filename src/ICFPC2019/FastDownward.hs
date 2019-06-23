@@ -14,7 +14,7 @@ import qualified Data.Array.Repa as R
 import Data.Array.Repa.Repr.Vector (V)
 import ICFPC2019.Types
 import ICFPC2019.Utils
-import ICFPC2019.RobotUtils
+import ICFPC2019.RobotUtils (applyOrientation, rotateLeft, rotateRight)
 
 -- import Debug.Trace
 

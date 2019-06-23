@@ -47,7 +47,6 @@ defaultPriorities = SM.fromList $ [ (MAttachWheels, 20)
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
-      map_ = problemMap
       moves =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
@@ -59,7 +58,6 @@ getAllMoveActions problem@Problem {..} state@ProblemState {..} =
 getAllActions :: Problem -> ProblemState -> [Action]
 getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
-      map_ = problemMap
       moves = getAllMoveActions problem state
   in moves
      ++ [MTurnRight, MTurnLeft]
@@ -86,7 +84,7 @@ getNeighbours priorities problem@Problem {..} state
         usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) usefulSteps'
 
-        moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
+        moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
 
         hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
