@@ -124,7 +124,7 @@ lineTouchesCellCorner a b sides =
     in if length pointsOnAB /= 1
         then False
         else 
-            let corners = zipWith (,) sides $ drop 1 sides ++ [head sides]
+            let corners = zipWith (\a b -> (a, b)) sides $ drop 1 sides ++ [head sides]
                 corner = head $ filter (\((c, c'), (_, d)) -> S.member c' pointsOnAB) corners
                 ((c, _), (_, d)) = corner
             in not $ segmentIntersectsLine a b c d

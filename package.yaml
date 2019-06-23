@@ -80,3 +80,17 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - icfpc2019
+
+benchmarks:
+  icfpc2019-bench:
+    main:                Solvers.hs
+    source-dirs:         bench
+    ghc-options:
+    - -Wall
+    - -fno-warn-unused-matches
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - icfpc2019
+    - criterion
