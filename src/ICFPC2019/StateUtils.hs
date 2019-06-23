@@ -35,26 +35,11 @@ cellsOnMoveLine a b
           | otherwise = p : go (p + d)
 
 changeState' :: Problem -> ProblemState -> Robot -> ProblemState
-changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = checkThings $ foldr collectBoosters newState moveSpanCells
+changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = foldr collectBoosters newState moveSpanCells
                    
   where moveSpanCells = cellsOnMoveLine (robotPosition problemRobot) (robotPosition newRobot)
         validManips pos = validManipulators problemMap state pos (robotManipulators newRobot)
         validManipsTotal = concatMap validManips $ moveSpanCells
-        --testCells = S.fromList [V2 16 0, V2 17 0, V2 18 0, V2 16 1, V2 17 1, V2 18 1]
-        testCells = S.fromList [V2 x y | x <- [21..33]
-                                       , y <- [18..19]
-                                       ]
-        checkThings a
-          -- | not $ S.null $ testCells `S.intersection` validCells =
-          | robotPosition newRobot `S.member` testCells =
-          -- | robotBoosters newRobot /= robotBoosters problemRobot && robotWheelsLeft problemRobot > 0 =
-            trace "" $
-            trace ("old robot: " ++ show problemRobot) $
-            trace ("new robot: " ++ show newRobot) $
-            trace ("new wrapped cells: " ++ show (problemUnwrapped `S.intersection` validCells)) $
-            a
-          | otherwise = a
-          where validCells = S.fromList validManipsTotal
         newState = state { problemRobot = newRobot
                          , problemUnwrapped = foldr S.delete problemUnwrapped validManipsTotal
                          }

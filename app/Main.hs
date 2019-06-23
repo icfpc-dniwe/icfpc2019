@@ -89,7 +89,7 @@ main = do
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
-  printPath prob state solution
+  --printPath prob state solution
 
   BB.hPutBuilder stdout $ buildSolution solution
   putStrLn ""
