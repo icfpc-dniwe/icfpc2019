@@ -93,15 +93,21 @@ getNeighboursOfType problem state = mapMaybe tryMove
                     Just state' -> Just (state', act)
                     _           -> Nothing
 
-getNeighbours :: ActionPriority -> Problem -> ProblemState -> [(ProblemState, [Action], Int)]
-getNeighbours priorities problem@Problem {..} state
+getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
+getNeighbours priorities problem@Problem {..} depth state
+--  | trace ("usef " ++ show (length usefulSteps)) False = undefined
   | hasBoostersInProximity 4 = collectBoosterSteps $ head $ visibleBoostersInProximity 4
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
---        defaultCost = 100
---        actionPrior act = SM.findWithDefault defaultCost act priorities
+        nextBestCost :: ProblemState -> Int
+--        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
+        nextBestCost s' = if depth < 1
+                          then case getNeighbours priorities problem (depth + 1) s' of
+                            [] -> -1000 * depth
+                            elems -> minimum . map (\(_, _, c') -> c') $ elems
+                          else defaultActionCost
         actionPrior = activePriorities priorities state
         drilledCells s = robotDrilled $ problemRobot s
         wrappedCells s s' = problemUnwrapped s' S.\\ problemUnwrapped s
@@ -117,7 +123,7 @@ getNeighbours priorities problem@Problem {..} state
           in {-trace ("move: " ++ show mov ++ " useful? " ++ show useful ++ " useless? " ++ show useless ++ " wrapping? " ++ show wrapping) $-}
             useful && not useless
         usefulSteps' = filter (uncurry stateUseful) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
 
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
         moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
@@ -130,7 +136,7 @@ getNeighbours priorities problem@Problem {..} state
           in filter (\bpos -> checkCellVisibility problemMap (drilledCells state) rpos bpos) $ S.toList boosters
         hasBoostersInProximity maxDest = any (>0) $ visibleBoostersInProximity maxDest
         collectBoosterSteps boosterPos = map convertSteps $ maybeToList $ bfs moveNeighbours state $ hasCollectedBooster boosterPos
-        hasCollectedBooster pos state' = M.member pos (problemBoosters state') /= M.member pos (problemBoosters state) 
+        hasCollectedBooster pos state' = M.member pos (problemBoosters state') /= M.member pos (problemBoosters state)
 
         convertSteps steps = (finalState, actions, cost)
           where actions = map snd steps
