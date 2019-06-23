@@ -89,8 +89,8 @@ getNeighbours priorities problem@Problem {..} state
   where
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         -- drill requires mutable map!
-        stateUseful newState move = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || isBooster move && move /= MAttachDrill
-        usefulSteps' = filter (\(newState, _) -> S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state)) neighbours
+        stateUseful newState mov = S.size (problemUnwrapped newState) /= S.size (problemUnwrapped state) || isBooster mov && mov /= MAttachDrill
+        usefulSteps' = filter (\(newState, mov) -> stateUseful newState mov) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], SM.findWithDefault 1 s priorities)) usefulSteps'
 
         moveNeighbours state = getNeighboursOfType problem state (getAllMoveActions problem state)
