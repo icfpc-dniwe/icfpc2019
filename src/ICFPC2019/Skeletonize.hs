@@ -1,5 +1,7 @@
 module ICFPC2019.Skeletonize
   ( Cluster(..)
+  , ClusterMap
+  , ClusterId
   , getCoreNodes
   , convertSkeleton
   ) where
@@ -82,7 +84,8 @@ neighbours cells p =
                 , V2 0    (-1)
                 ]
 
-type ClusterMap = Map Int Cluster
+type ClusterId = Int
+type ClusterMap = Map ClusterId Cluster
 
 convertSkeleton ::  MapArray -> [I2] -> ClusterMap
 convertSkeleton cells coreNodes = runST $ do
