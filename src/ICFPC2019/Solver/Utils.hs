@@ -62,7 +62,7 @@ getAllActions problem@Problem {..} state@ProblemState {..} =
   in moves ++ [MTurnRight, MTurnLeft] ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
-getNeighboursOfType problem@Problem {..} state@ProblemState {..} = mapMaybe tryMove
+getNeighboursOfType problem state = mapMaybe tryMove
   where
     tryMove :: Action -> Maybe (ProblemState, Action)
     tryMove act = case changeState problem state act of
