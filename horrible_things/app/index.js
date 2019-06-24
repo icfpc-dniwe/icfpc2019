@@ -79,23 +79,29 @@ const main = async () => {
         //console.error("uploading task file...");
         await loadFile(btnSubmitTask, taskPath);
         btnSubmitTask.onchange();
-        await tryOrWait(async() => {
+        const taskResult = await tryOrWait(async() => {
             let text = outputField.textContent;
             if (!text.startsWith("Done") && !text.startsWith("Fail")) return;
-            console.error(text);
-            return true;
+            return text;
         });
+        if (!taskResult.startsWith("Done")) {
+            console.error("err " + taskResult);
+            return taskResult;
+        }
 
         outputField.textContent = "";
         //console.error("uploading solution file...");
         await loadFile(btnSubmitSolution, solutionPath);
         btnSubmitSolution.onchange();
-        await tryOrWait(async() => {
+        const solResult = await tryOrWait(async() => {
             let text = outputField.textContent;
             if (!text.startsWith("Done") && !text.startsWith("Fail")) return;
-            console.error(text);
-            return true;
+            return text;
         });
+        if (!solResult.startsWith("Done")) {
+            console.error("err " + solResult);
+            return solResult;
+        }
 
         outputField.textContent = "";
         //console.error("checking solution...");
@@ -106,7 +112,8 @@ const main = async () => {
         })
     });
 
-    console.log(result);
+    console.error(result);
+    process.exit(result.startsWith("Success!") ? 0 : 1);
 }
 
 main()
