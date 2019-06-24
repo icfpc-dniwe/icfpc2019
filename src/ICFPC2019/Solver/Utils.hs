@@ -67,23 +67,24 @@ activePriorities priors ProblemState{..} MAttachWheels
   | otherwise                         = SM.findWithDefault defaultActionCost MAttachWheels priors
 activePriorities priors _ act = SM.findWithDefault defaultActionCost act priors
 
-getAllMoveActions :: Problem -> ProblemState -> [Action]
-getAllMoveActions problem@Problem {..} state@ProblemState {..} =
+getAllMoveActions' :: Problem -> ProblemState -> [Action]
+getAllMoveActions' problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       moves =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
-        , MPlaceBeacon
-        , MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
+
+getAllMoveActions :: Problem -> ProblemState -> [Action]
+getAllMoveActions problem state = MAttachDrill : getAllMoveActions' problem state
 
 getAllActions :: Problem -> ProblemState -> [Action]
 getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
-      moves = getAllMoveActions problem state
+      moves = getAllMoveActions' problem state
   in moves
-     ++ [MTurnRight, MTurnLeft]
+     ++ [MTurnRight, MTurnLeft, MPlaceBeacon]
      ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
@@ -135,7 +136,7 @@ getNeighbours priorities problem@Problem {..} depth state
         usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
 
         goToPoint :: I2 -> Maybe [(ProblemState, Action)]
-        goToPoint point = aStar (map (\(s, a) -> (s, a, 1)) . moveNeighbours) (mlenDistance (getRobotPos state) . getRobotPos) state hasMovedOut
+        goToPoint point = aStar (map (\(s, a) -> (s, a, 1)) . moveNeighbours) (mlenDistance point . getRobotPos) state hasMovedOut
 --        goToPoint :: ProblemState -> Maybe [(ProblemState, Action)]
 --        goToPoint s' = aStar (map (\(s, a) -> (getRobotPos s, a, posDist s)) . moveNeighbours) (mlenDistance $ getRobotPos state) (getRobotPos s') (== getRobotPos s')
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
