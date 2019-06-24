@@ -4,13 +4,19 @@ set -e
 first=$1
 second=$2
 
+function count_size() {
+    file="$1"
+    sed 's/W|A|S|D|Z|E|Q|B([0-9]*,[0-9]*)|F|L|R|T([0-9]*,[0-9]*)/u/g' "$file" | tr -d ' \n' | wc -c
+}
+
 for path in $first/*.sol; do
     filename="$(basename "$path")"
-    size1=$(wc -c <"$first/$filename")
-    if [[ $size1 > 0 ]]; then
+    problem="problems/${filename%.sol}.desc"
+    size1=$(count_size "$first/$filename")
+    if [[ $size1 > 0 ]] && node horrible_things/index.js "$problem" "$path"; then
         if [ -e "$second/$filename" ];
         then
-            size2=$(wc -c < "$second/$filename")
+            size2=$(count_size "$second/$filename")
             # echo $size1 $size2
             if [[ $size1 < $size2 ]]; then
                 echo "copying better $filename"
