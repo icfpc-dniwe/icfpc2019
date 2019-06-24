@@ -29,9 +29,9 @@ wing-like manipulators etc.
 
 Mining task generation was based on connecting pre-assigned points into one
 connected structure. Task generated this way was always too simple (number of
-verticies in polygon < vMin) thus for complication additional obstacle points
-were chosen on the image plane. The whole process was iterated until needed
-difficulty was achieved.
+vertices in polygon < vMin) thus additional obstacle points were chosen on the
+image plane. The whole process was iterated until needed difficulty was
+achieved.
 
 * Fun parts
 
