@@ -12,6 +12,15 @@ import GHC.Generics (Generic)
 import ICFPC2019.Utils
 import ICFPC2019.Visualize
 
+type RectilinearPoly = [I2]
+
+data RawProblem = RawProblem { rawMap :: !RectilinearPoly
+                             , rawPosition :: !I2
+                             , rawObstacles :: ![RectilinearPoly]
+                             , rawBoosters :: ![(Booster, I2)]
+                             }
+                deriving (Show, Eq)
+
 data Cell = Obstacle
           | Free
           deriving (Show, Eq)
@@ -79,3 +88,5 @@ data Action = MUp
             | MPlaceBeacon
             | MTeleport !I2
             deriving (Show, Eq, Ord)
+
+type Solver = Problem -> ProblemState -> Maybe [(ProblemState, [Action])]

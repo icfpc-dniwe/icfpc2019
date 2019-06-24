@@ -118,14 +118,40 @@ findFreePoint Problem{..} state@ProblemState{..} = bfs' (getMapNeighbours proble
     startPos = robotPosition problemRobot
     isUnWrapped point = S.member point problemUnwrapped
 
+moveOutActionPrior :: Action -> Int
+moveOutActionPrior MAttachDrill = 10
+moveOutActionPrior _            = 1
+
+goToPoint :: Problem -> ProblemState -> I2 -> Maybe [(ProblemState, Action)]
+goToPoint prob state point = aStar (map (\(s, a) -> (s, a, moveOutActionPrior a)) . moveNeighbours prob) (mlenDistance point . getRobotPos) state (hasMovedOut state)
+
+getRobotPos :: ProblemState -> I2
+getRobotPos = robotPosition . problemRobot
+
+moveNeighbours :: Problem -> ProblemState -> [(ProblemState, Action)]
+moveNeighbours problem state = getNeighboursOfType problem state (getAllMoveActions problem state)
+
+moveoutSteps :: Problem -> ProblemState -> [(ProblemState, [Action], Int)]
+moveoutSteps problem state = case findFreePoint problem state of
+  Nothing    -> []
+  Just point -> map convertSteps $ maybeToList $ goToPoint problem state point
+
+convertSteps :: [(ProblemState, Action)] -> (ProblemState, [Action], Int)
+convertSteps steps = (finalState, actions, cost)
+  where actions = map snd steps
+        cost = length steps
+        (finalState, _) = last steps
+
+hasMovedOut :: ProblemState -> ProblemState -> Bool
+hasMovedOut state state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
+
 getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} depth state
-  -- t| trace ("usef " ++ show (length usefulSteps)) False = undefined
+--  | trace ("usef " ++ show (length usefulSteps)) False = undefined
   | hasBoostersInProximity 4 = collectBoosterSteps $ head $ visibleBoostersInProximity 4
-  | null usefulSteps = moveoutSteps
+  | null usefulSteps = moveoutSteps problem state
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
-        getRobotPos = robotPosition . problemRobot
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         nextBestCost :: ProblemState -> Int
 --        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
@@ -151,30 +177,15 @@ getNeighbours priorities problem@Problem {..} depth state
         usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) usefulSteps'
 
-        moveOutActionPrior :: Action -> Int
-        moveOutActionPrior MAttachDrill = 10
-        moveOutActionPrior _            = 1
-        goToPoint :: I2 -> Maybe [(ProblemState, Action)]
-        goToPoint point = aStar (map (\(s, a) -> (s, a, moveOutActionPrior a)) . moveNeighbours) (mlenDistance point . getRobotPos) state hasMovedOut
-        moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
-        moveoutSteps = case findFreePoint problem state of
-          Just point -> map convertSteps $ maybeToList $ goToPoint point
-          Nothing    -> []
-        hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
-
         visibleBoostersInProximity maxDest =
           let rpos = robotPosition $ problemRobot state
               delta = (V2 maxDest maxDest)
               boosters = boostersInBoundingBox problemMap state (rpos - delta) $ rpos + delta
           in filter (\bpos -> checkCellVisibility problemMap (drilledCells state) rpos bpos) $ S.toList boosters
         hasBoostersInProximity maxDest = any (>0) $ visibleBoostersInProximity maxDest
-        collectBoosterSteps boosterPos = map convertSteps $ maybeToList $ bfs moveNeighbours state $ hasCollectedBooster boosterPos
+        moveNeighbours' = moveNeighbours problem
+        collectBoosterSteps boosterPos = map convertSteps $ maybeToList $ bfs moveNeighbours' state $ hasCollectedBooster boosterPos
         hasCollectedBooster pos state' = M.member pos (problemBoosters state') /= M.member pos (problemBoosters state)
-
-        convertSteps steps = (finalState, actions, cost)
-          where actions = map snd steps
-                cost = length steps
-                (finalState, _) = last steps
 
 genFinish :: ProblemState -> ProblemState
 genFinish start@ProblemState {..} = start {problemUnwrapped = S.empty}
