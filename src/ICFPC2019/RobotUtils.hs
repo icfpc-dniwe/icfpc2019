@@ -63,6 +63,11 @@ numWalls :: MapArray -> Set I2 -> I2 -> Int
 numWalls gameMap drilledCells pos = sum $ map fromEnum [mapEdgeOrWall gameMap drilledCells (move pos orientation)
                                                 | orientation <- [E, N, W, S]]
 
+getMapNeighbours :: MapArray -> Set I2 -> I2 -> [I2]
+getMapNeighbours gameMap drilledCells pos = filter (not . mapEdgeOrWall gameMap drilledCells) allNeighbours
+  where
+    allNeighbours = [move pos orient | orient <- [N, E, S, W]]
+
 sign :: Float -> Int
 sign v
     | abs v < 1e-6 = 0

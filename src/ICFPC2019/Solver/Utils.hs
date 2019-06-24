@@ -11,6 +11,7 @@ import Data.Maybe
 import Linear.V2
 
 import DNIWEChan.Graph
+import DNIWEChan.Metric
 import ICFPC2019.Utils
 import ICFPC2019.Types
 import ICFPC2019.RobotUtils
@@ -93,6 +94,13 @@ getNeighboursOfType problem state = mapMaybe tryMove
                     Just state' -> Just (state', act)
                     _           -> Nothing
 
+findFreePoint :: Problem -> ProblemState -> Maybe I2
+findFreePoint Problem{..} state@ProblemState{..} = bfs' (getMapNeighbours problemMap drilledCells) startPos isUnWrapped
+  where
+    drilledCells = robotDrilled problemRobot
+    startPos = robotPosition problemRobot
+    isUnWrapped point = S.member point problemUnwrapped
+
 getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} depth state
 --  | trace ("usef " ++ show (length usefulSteps)) False = undefined
@@ -100,6 +108,7 @@ getNeighbours priorities problem@Problem {..} depth state
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
   where
+        getRobotPos = robotPosition . problemRobot
         neighbours = getNeighboursOfType problem state (getAllActions problem state)
         nextBestCost :: ProblemState -> Int
 --        nextBestCost s' | trace ("nextBest " ++ show depth ++ " p " ++ show (robotPosition $ problemRobot s')) False = undefined
@@ -125,8 +134,14 @@ getNeighbours priorities problem@Problem {..} depth state
         usefulSteps' = filter (uncurry stateUseful) neighbours
         usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
 
+        goToPoint :: I2 -> Maybe [(ProblemState, Action)]
+        goToPoint point = aStar (map (\(s, a) -> (s, a, 1)) . moveNeighbours) (mlenDistance (getRobotPos state) . getRobotPos) state hasMovedOut
+--        goToPoint :: ProblemState -> Maybe [(ProblemState, Action)]
+--        goToPoint s' = aStar (map (\(s, a) -> (getRobotPos s, a, posDist s)) . moveNeighbours) (mlenDistance $ getRobotPos state) (getRobotPos s') (== getRobotPos s')
         moveNeighbours state' = getNeighboursOfType problem state' (getAllMoveActions problem state')
-        moveoutSteps = map convertSteps $ maybeToList $ bfs moveNeighbours state hasMovedOut
+        moveoutSteps = case findFreePoint problem state of
+          Just point -> map convertSteps $ maybeToList $ goToPoint point
+          Nothing    -> []
         hasMovedOut state' = S.size (problemUnwrapped state') /= S.size (problemUnwrapped state)
 
         visibleBoostersInProximity maxDest =
