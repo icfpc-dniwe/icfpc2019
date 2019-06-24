@@ -3,7 +3,7 @@ set -e
 
 first=$1
 second=$2
-safe=1
+safe=0
 
 function count_size() {
     file="$1"

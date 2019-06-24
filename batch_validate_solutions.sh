@@ -11,7 +11,7 @@ PROBLEMS_FOLDER=`realpath ${args[0]}`
 SOLUTIONS_FOLDER=`realpath ${args[1]}`
 echo "batch validating: problems folder '$PROBLEMS_FOLDER', solutions folder '$SOLUTIONS_FOLDER'"
 
-for file in `ls "$SOLUTIONS_FOLDER/" | grep $SOLUTION_EXT` ; do
+for file in `ls "$SOLUTIONS_FOLDER/" | grep $SOLUTION_EXT | grep -P "prob-1\d\d" | head -n -5` ; do
     taskname="$(basename $file .$SOLUTION_EXT)"
     taskfile="$PROBLEMS_FOLDER/$taskname.$PROBLEM_EXT"
     solfile="$SOLUTIONS_FOLDER/$taskname.$SOLUTION_EXT"
