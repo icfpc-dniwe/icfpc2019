@@ -90,9 +90,9 @@ main = do
 --  let clusters = convertSkeleton (problemMap prob) coreNodes
   --hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
---  solution <- solveSED rawProb prob state
+  solution <- solveSED rawProb prob state
 --  solution <- solveSS prob clusters state
-  solution <- solveSA prob state
+--  solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
   --printPath prob state solution

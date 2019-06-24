@@ -23,8 +23,8 @@ solve nextSolve RawProblem{..} prob@Problem{..} state@ProblemState{..} =
              else fst $ last steps
     steps = map (\(s, a) -> (s, [a])) $ traverseWaypoints prob state $ trace ("reor " ++ show points) points
     points = reorderPoints startPoint waypoints
-    startPoint = undefined --findClosest (getRobotPos state) $ trace ("www " ++ show waypoints) waypoints
-    waypoints = undefined --map (findClosestFree prob state) $ trace ("raw " ++ show rawMap) rawMap
+    startPoint = findClosest (getRobotPos state) $ trace ("www " ++ show waypoints) waypoints
+    waypoints = mapMaybe (findClosestFree prob state) $ trace ("raw " ++ show rawMap) rawMap
   in
     case nextSolve prob state' of
       Just additionalSteps -> Just $ steps ++ additionalSteps
