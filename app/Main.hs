@@ -48,8 +48,11 @@ solveSB prob state = do
     Just plan -> return $ concatMap snd plan
     _ -> fail "Unsolvable!"
 
-solveSS :: Problem -> ClusterMap -> ProblemState -> IO [Action]
-solveSS prob clusters state = do
+solveSS :: Problem -> ProblemState -> IO [Action]
+solveSS prob state = do
+  coreNodes <- getCoreNodes $ problemMap prob
+  let clusters = convertSkeleton (problemMap prob) coreNodes
+  hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
   let res = SS.solve prob clusters state
 
   case res of
@@ -86,12 +89,9 @@ main = do
   --hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
 --  hPutStrLn stderr $ showPlane $ problemMap prob
---  coreNodes <- getCoreNodes $ problemMap prob
---  let clusters = convertSkeleton (problemMap prob) coreNodes
-  --hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
 --  solution <- solveSED rawProb prob state
---  solution <- solveSS prob clusters state
+  --solution <- solveSS prob state
   solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
