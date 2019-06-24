@@ -58,7 +58,7 @@ solveProblem :: Problem -> ProblemState -> FD.Problem (SolveResult Action)
 solveProblem Problem {..} ProblemState {..} = do
   cells <- genCells problemUnwrapped problemMap
   robotLocation <- newVar $ robotPosition problemRobot
-  robotOrientation <- newVar N
+  robotOrientation <- newVar E
 
   let
     checkRange = R.inShapeRange (V2 0 0) (R.extent problemMap - 1)

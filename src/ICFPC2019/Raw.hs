@@ -19,15 +19,6 @@ import ICFPC2019.Types
 import ICFPC2019.Utils
 
 import Debug.Trace
- 
-type RectilinearPoly = [I2]
-
-data RawProblem = RawProblem { rawMap :: !RectilinearPoly
-                             , rawPosition :: !I2
-                             , rawObstacles :: ![RectilinearPoly]
-                             , rawBoosters :: ![(Booster, I2)]
-                             }
-                deriving (Show, Eq)
 
 rectangle :: [a] -> [(a, a)]
 rectangle points@(h : t@(_:_)) = zip points t ++ [(last t, h)]
@@ -75,6 +66,7 @@ convertProblem (RawProblem { .. }) =
   , ProblemState { problemUnwrapped
                  , problemRobot
                  , problemBoosters
+                 , problemDrilled = S.empty
                  }
   )
   where minX = minimum (map (^. _x) rawMap)
@@ -100,7 +92,7 @@ convertProblem (RawProblem { .. }) =
                              , robotBoosters = M.empty
                              , robotDrillLeft = 0
                              , robotWheelsLeft = 0
-                             , robotDrilled = S.empty
+                             , robotOrientation = E
                              }
 
         problemBoosters = M.fromListWith S.union $ map (\(booster, p) -> (p, S.singleton booster)) rawBoosters

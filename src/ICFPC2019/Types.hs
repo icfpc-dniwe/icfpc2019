@@ -12,6 +12,15 @@ import GHC.Generics (Generic)
 import ICFPC2019.Utils
 import ICFPC2019.Visualize
 
+type RectilinearPoly = [I2]
+
+data RawProblem = RawProblem { rawMap :: !RectilinearPoly
+                             , rawPosition :: !I2
+                             , rawObstacles :: ![RectilinearPoly]
+                             , rawBoosters :: ![(Booster, I2)]
+                             }
+                deriving (Show, Eq)
+
 data Cell = Obstacle
           | Free
           deriving (Show, Eq)
@@ -32,7 +41,7 @@ data Booster = Extension
 type MapArray = Array U I2 Bool
 
 data Orientation = E | N | W | S
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Eq, Ord, Generic)
 
 data Rotation = L | R
               deriving (Show, Eq, Ord)
@@ -43,7 +52,7 @@ data Robot = Robot { robotPosition :: !I2
                    , robotBeacons :: !(Set I2)
                    , robotDrillLeft :: !Int
                    , robotWheelsLeft :: !Int
-                   , robotDrilled :: !(Set I2) -- this is logically incorrect for multiple robots, but we do not plan to clone them anyway
+                   , robotOrientation :: !Orientation
                    }
              deriving (Show, Eq, Ord, Generic)
 
@@ -55,9 +64,11 @@ data Problem = Problem { problemMap :: !MapArray
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
+                                 , problemDrilled :: !(Set I2)
                                  }
                   deriving (Show, Ord, Eq, Generic)
 
+instance Hashable Orientation where
 instance Hashable ProblemState where
 instance Hashable Booster where
 instance Hashable Robot where
@@ -77,3 +88,5 @@ data Action = MUp
             | MPlaceBeacon
             | MTeleport !I2
             deriving (Show, Eq, Ord)
+
+type Solver = Problem -> ProblemState -> Maybe [(ProblemState, [Action])]

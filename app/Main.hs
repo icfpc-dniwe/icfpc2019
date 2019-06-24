@@ -20,6 +20,7 @@ import qualified ICFPC2019.Solver.AStar as SA
 import qualified ICFPC2019.Solver.BFS as SB
 import qualified ICFPC2019.Solver.DFS as SD
 import qualified ICFPC2019.Solver.Skeleton as SS
+import qualified ICFPC2019.Solver.DeadEnd as SED
 import ICFPC2019.Validate
 
 solveFD :: Problem -> ProblemState -> IO [Action]
@@ -63,6 +64,14 @@ solveSD prob state = do
     Just plan -> return $ concatMap snd plan
     _ -> fail "Unsolvable!"
 
+solveSED :: RawProblem -> Problem -> ProblemState -> IO [Action]
+solveSED rawProb prob state = do
+  let res = SED.solve SA.solve rawProb prob state
+
+  case res of
+    Just plan -> return $ concatMap snd plan
+    _ -> fail "Unsolvable!"
+
 main :: IO ()
 main = do
   --path <- getEnv "PATH"
@@ -76,13 +85,14 @@ main = do
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
   --hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
-  --hPutStrLn stderr $ showPlane $ problemMap prob
-  --coreNodes <- getCoreNodes $ problemMap prob
-  --let clusters = convertSkeleton (problemMap prob) coreNodes
+  hPutStrLn stderr $ showPlane $ problemMap prob
+--  coreNodes <- getCoreNodes $ problemMap prob
+--  let clusters = convertSkeleton (problemMap prob) coreNodes
   --hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
-  --solution <- solveSS prob clusters state
-  solution <- solveSA prob state
+  solution <- solveSED rawProb prob state
+--  solution <- solveSS prob clusters state
+--  solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
   --printPath prob state solution
