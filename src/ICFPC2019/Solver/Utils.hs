@@ -73,13 +73,11 @@ getAllMoveActions' problem@Problem {..} state@ProblemState {..} =
       moves =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
---        , MPlaceBeacon
-        , MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
-getAllMoveActions problem state = MAttachDrill : getAllMoveActions' problem state
+getAllMoveActions problem state = getAllMoveActions' problem state
 
 getAllActions :: Problem -> ProblemState -> [Action]
 getAllActions problem@Problem {..} state@ProblemState {..} =
@@ -98,15 +96,14 @@ getNeighboursOfType problem state = mapMaybe tryMove
                     _           -> Nothing
 
 findFreePoint :: Problem -> ProblemState -> Maybe I2
-findFreePoint Problem{..} state@ProblemState{..} = bfs' (getMapNeighbours problemMap drilledCells) startPos isUnWrapped
+findFreePoint Problem{..} state@ProblemState{..} = bfs' (getMapNeighbours problemMap problemDrilled) startPos isUnWrapped
   where
-    drilledCells = robotDrilled problemRobot
     startPos = robotPosition problemRobot
     isUnWrapped point = S.member point problemUnwrapped
 
 getNeighbours :: ActionPriority -> Problem -> Int -> ProblemState -> [(ProblemState, [Action], Int)]
 getNeighbours priorities problem@Problem {..} depth state
-  | trace ("usef " ++ show (length usefulSteps)) False = undefined
+  -- t| trace ("usef " ++ show (length usefulSteps)) False = undefined
   | hasBoostersInProximity 4 = collectBoosterSteps $ head $ visibleBoostersInProximity 4
   | null usefulSteps = moveoutSteps
   | otherwise = take 1 $ sortBy (comparing $ \(s, _, cost) -> cost - cellPrior s) usefulSteps
@@ -121,7 +118,7 @@ getNeighbours priorities problem@Problem {..} depth state
                             elems -> minimum . map (\(_, _, c') -> c') $ elems
                           else defaultActionCost
         actionPrior = activePriorities priorities state
-        drilledCells s = robotDrilled $ problemRobot s
+        drilledCells s = problemDrilled s
         wrappedCells s s' = problemUnwrapped s' S.\\ problemUnwrapped s
         cellPrior s = sum $ map (\x -> 1 + x * 3) $ numWalls problemMap (drilledCells s) <$> (S.toList $ wrappedCells state s)
         stateUseful newState mov =

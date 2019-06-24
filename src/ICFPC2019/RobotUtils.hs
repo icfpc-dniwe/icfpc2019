@@ -206,24 +206,20 @@ applyRotAction r action =
   r { robotManipulators = S.fromList $ map (`rot` action) $ S.toList $ robotManipulators r
     }
 
-validRobot :: MapArray -> Robot -> Bool
-validRobot map_ r =
+validRobot :: MapArray -> ProblemState -> Robot -> Bool
+validRobot map_ state r =
   let rpos = robotPosition r
       drill = drillEnabled r
   in checkBoundaries map_ rpos &&
-     (drill || checkObstacles map_ (robotDrilled r) rpos)
+     (drill || checkObstacles map_ (problemDrilled state) rpos)
 
 applyMoveAction' :: MapArray -> ProblemState -> Orientation -> Int -> Robot -> ([I2], Robot)
 applyMoveAction' map_ state action 0 r = ([], r)
 applyMoveAction' map_ state action remainingSteps r =
     let newPos =  move (robotPosition r) action
-        newDrilled = S.union (robotDrilled r) $
-            if drillEnabled r
-                then S.fromList $ filter (\p -> not $ checkMapObstacle map_ p) [newPos]
-                else S.empty
-        possibleRobot = r { robotPosition = newPos, robotDrilled = newDrilled }
+        possibleRobot = r { robotPosition = newPos }
         (nextPath, nextRobot) = applyMoveAction' map_ state action (remainingSteps-1) possibleRobot
-    in if validRobot map_ possibleRobot
+    in if validRobot map_ state possibleRobot
        then (newPos : nextPath, nextRobot)
        else ([], r)
 
@@ -277,10 +273,16 @@ applyAction map_ state@(ProblemState { problemRobot = r }) action = second decre
 
 -- Expects point to be turned north initially.
 applyOrientation :: Orientation -> I2 -> I2
-applyOrientation N p = p
-applyOrientation W (V2 x y) = V2 (-y) x
-applyOrientation S (V2 x y) = V2 (-x) (-y)
-applyOrientation E (V2 x y) = V2 y    (-x)
+applyOrientation E p = p
+applyOrientation N (V2 x y) = V2 (-y) x
+applyOrientation W (V2 x y) = V2 (-x) (-y)
+applyOrientation S (V2 x y) = V2 y    (-x)
+
+revertOrientation :: Orientation -> I2 -> I2
+revertOrientation E p = p
+revertOrientation N (V2 x y) = V2 y    (-x)
+revertOrientation W (V2 x y) = V2 (-x) (-y)
+revertOrientation S (V2 x y) = V2 (-y) x
 
 rotateLeft :: Orientation -> Orientation
 rotateLeft N = W
@@ -293,3 +295,7 @@ rotateRight N = E
 rotateRight W = N
 rotateRight S = W
 rotateRight E = S
+
+rotateOrientation :: Rotation -> Orientation -> Orientation
+rotateOrientation L = rotateLeft
+rotateOrientation R = rotateRight

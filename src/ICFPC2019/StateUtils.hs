@@ -27,10 +27,15 @@ collectBoosters p state@(ProblemState {..}) =
 
 changeState' :: Problem -> ProblemState -> ([I2], Robot) -> ProblemState
 changeState' prob@(Problem {..}) state@(ProblemState {..}) (moveSpanCells, newRobot) = foldr collectBoosters newState moveSpanCells
-  where validManips pos = validManipulators problemMap (robotDrilled newRobot) pos (robotManipulators newRobot)
+  where validManips pos = validManipulators problemMap problemDrilled pos (robotManipulators newRobot)
         validManipsTotal = concatMap validManips $ moveSpanCells
+        newDrilled =
+            if drillEnabled problemRobot
+                then foldr S.insert problemDrilled moveSpanCells
+                else problemDrilled
         newState = state { problemRobot = newRobot
                          , problemUnwrapped = foldr S.delete problemUnwrapped validManipsTotal
+                         , problemDrilled = newDrilled
                          }
 
 changeState :: Problem -> ProblemState -> Action -> Maybe ProblemState

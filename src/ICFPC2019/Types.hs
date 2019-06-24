@@ -32,7 +32,7 @@ data Booster = Extension
 type MapArray = Array U I2 Bool
 
 data Orientation = E | N | W | S
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Eq, Ord, Generic)
 
 data Rotation = L | R
               deriving (Show, Eq, Ord)
@@ -43,7 +43,6 @@ data Robot = Robot { robotPosition :: !I2
                    , robotBeacons :: !(Set I2)
                    , robotDrillLeft :: !Int
                    , robotWheelsLeft :: !Int
-                   , robotDrilled :: !(Set I2) -- this is logically incorrect for multiple robots, but we do not plan to clone them anyway
                    }
              deriving (Show, Eq, Ord, Generic)
 
@@ -55,9 +54,11 @@ data Problem = Problem { problemMap :: !MapArray
 data ProblemState = ProblemState { problemBoosters :: !(HashMap I2 (Set Booster))
                                  , problemUnwrapped :: !(Set I2)
                                  , problemRobot :: !Robot
+                                 , problemDrilled :: !(Set I2)
                                  }
                   deriving (Show, Ord, Eq, Generic)
 
+instance Hashable Orientation where
 instance Hashable ProblemState where
 instance Hashable Booster where
 instance Hashable Robot where
