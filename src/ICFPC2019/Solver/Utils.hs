@@ -73,7 +73,7 @@ getAllMoveActions problem@Problem {..} state@ProblemState {..} =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
         , MPlaceBeacon
-        , MAttachDrill
+        --, MAttachDrill
         ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
