@@ -85,14 +85,14 @@ main = do
       Fail _ ctx e -> fail ("Failed to parse in " ++ show ctx ++ ": " ++ e)
   --hPutStrLn stderr $ show rawProb
   let (prob, state) = convertProblem rawProb
-  hPutStrLn stderr $ showPlane $ problemMap prob
+--  hPutStrLn stderr $ showPlane $ problemMap prob
 --  coreNodes <- getCoreNodes $ problemMap prob
 --  let clusters = convertSkeleton (problemMap prob) coreNodes
   --hPutStrLn stderr $ "Clusters count: " ++ show (M.size clusters)
 
-  solution <- solveSED rawProb prob state
+--  solution <- solveSED rawProb prob state
 --  solution <- solveSS prob clusters state
---  solution <- solveSA prob state
+  solution <- solveSA prob state
   --solution <- solveFD prob state
   hPutStrLn stderr $ "Found solution, length " ++ show (length solution)
   --printPath prob state solution
