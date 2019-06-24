@@ -124,15 +124,15 @@ getNeighbours priorities problem@Problem {..} depth state
         stateUseful newState mov =
           let wrapping = S.size (wrappedCells newState state) /= 0
               prioritized = actionPrior mov < defaultActionCost
-              robotPosChanging = robotPosition (problemRobot newState) /= robotPosition (problemRobot state)
+              robotPosChanging = getRobotPos newState /= getRobotPos state
               rotation = isRotation mov
               ----
               useful = wrapping || prioritized
               useless = not wrapping && not robotPosChanging && rotation
-          in {-trace ("move: " ++ show mov ++ " useful? " ++ show useful ++ " useless? " ++ show useless ++ " wrapping? " ++ show wrapping) $-}
+          in
             useful && not useless
         usefulSteps' = filter (uncurry stateUseful) neighbours
-        usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) {-$ trace ("useful steps: " ++ show (snd <$> usefulSteps')) $-} usefulSteps'
+        usefulSteps = map (\(f, s) -> (f, [s], nextBestCost f + actionPrior s)) usefulSteps'
 
         moveOutActionPrior :: Action -> Int
         moveOutActionPrior MAttachDrill = 10
