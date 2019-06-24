@@ -74,7 +74,7 @@ getAllMoveActions' problem@Problem {..} state@ProblemState {..} =
       moves =
         [ MUp, MRight, MDown, MLeft
         , MAttachWheels
-        ] ++ (MTeleport <$> (S.toList $ robotBeacons robot))
+        ] -- ++ (MTeleport <$> (S.toList $ robotBeacons robot))
   in moves
 
 getAllMoveActions :: Problem -> ProblemState -> [Action]
@@ -101,7 +101,7 @@ getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       moves = getAllMoveActions' problem state
   in moves
-     ++ [MTurnRight, MTurnLeft, MPlaceBeacon]
+     ++ [MTurnRight, MTurnLeft] --, MPlaceBeacon]
      ++ (MAttachManipulator <$> (optimizedExtension (robotOrientation robot) $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
