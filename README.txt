@@ -44,13 +44,13 @@ difficulty was achieved.
 
 * Feedback
 
-+ The task was fun and allowed for many different approaches. We had great fun;
-+ UI-based checker without any automation capabilities isn't cool; We had a
++ The task was nice and allowed for many different approaches. We had great fun;
++ UI-based checker without any automation capabilities isn't cool. We had a
   workaround but a proper batch testing tool would have been much better;
 * Better logging in checker and visualizer would have been much appreciated. It
   was difficult to determine exact step at which error occured and what exactly
-  was violated.
+  was violated;
 + Lambda-chain is somewhat against the spirit of ICFPC as we know it - a
   contest to the very end. Because the mining process starts early teams with
-  good solutions get only better and slow teams (like us :D) get worse. Just like
+  good solvers get only better and slow teams (like us :D) get worse. Just like
   in a capitalistic world!
