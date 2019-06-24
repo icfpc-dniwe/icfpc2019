@@ -17,9 +17,10 @@ for file in `ls "$SOLUTIONS_FOLDER/" | grep $SOLUTION_EXT` ; do
     solfile="$SOLUTIONS_FOLDER/$taskname.$SOLUTION_EXT"
     
     echo "Validating task '$taskfile', solution: '$solfile'"
-    result=`$VALIDATE $taskfile $solfile`
-    if [[ $result != "OK" ]]; then
+    $VALIDATE $taskfile $solfile
+    if [ "$?" != "0" ]; then
         echo "Solution is INVALID for $taskname"
+	rm "$solfile"
     else
         echo "OK"
     fi
