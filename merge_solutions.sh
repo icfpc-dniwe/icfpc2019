@@ -3,6 +3,7 @@ set -e
 
 first=$1
 second=$2
+safe=
 
 function count_size() {
     file="$1"
@@ -13,7 +14,11 @@ for path in $first/*.sol; do
     filename="$(basename "$path")"
     problem="problems/${filename%.sol}.desc"
     size1=$(count_size "$first/$filename")
-    if [[ $size1 > 0 ]] && node horrible_things/index.js "$problem" "$path"; then
+    if [[ $size1 > 0 ]]; then
+        if [ -n "$safe" ] && ! node horrible_things/index.js "$problem" "$path"; then
+            continue
+        fi
+
         if [ -e "$second/$filename" ];
         then
             size2=$(count_size "$second/$filename")
