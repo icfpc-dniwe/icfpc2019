@@ -25,21 +25,10 @@ collectBoosters p state@(ProblemState {..}) =
            , problemRobot = newRobot
            }
 
-cellsOnMoveLine :: I2 -> I2 -> [I2]
-cellsOnMoveLine a b
-  | a == b = [a]
-  | otherwise = go (a + d)
-  where d = signum (b - a)
-        go p
-          | p == b = [p]
-          | otherwise = p : go (p + d)
-
-changeState' :: Problem -> ProblemState -> Robot -> ProblemState
-changeState' prob@(Problem {..}) state@(ProblemState {..}) newRobot = foldr collectBoosters newState moveSpanCells
-  where moveSpanCells = cellsOnMoveLine (robotPosition problemRobot) (robotPosition newRobot)
-        validManips pos = validManipulators problemMap (robotDrilled newRobot) pos (robotManipulators newRobot)
+changeState' :: Problem -> ProblemState -> ([I2], Robot) -> ProblemState
+changeState' prob@(Problem {..}) state@(ProblemState {..}) (moveSpanCells, newRobot) = foldr collectBoosters newState moveSpanCells
+  where validManips pos = validManipulators problemMap (robotDrilled newRobot) pos (robotManipulators newRobot)
         validManipsTotal = concatMap validManips $ moveSpanCells
-        drill = drillEnabled newRobot
         newState = state { problemRobot = newRobot
                          , problemUnwrapped = foldr S.delete problemUnwrapped validManipsTotal
                          }

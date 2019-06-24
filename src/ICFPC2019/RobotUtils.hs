@@ -13,6 +13,7 @@ module ICFPC2019.RobotUtils
 -}
 module ICFPC2019.RobotUtils where
 
+import Control.Arrow
 import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.HashMap.Strict as M
@@ -212,8 +213,8 @@ validRobot map_ r =
   in checkBoundaries map_ rpos &&
      (drill || checkObstacles map_ (robotDrilled r) rpos)
 
-applyMoveAction' :: MapArray -> ProblemState -> Orientation -> Int -> Robot -> (Bool, Robot)
-applyMoveAction' map_ state action 0 r = (False, r)
+applyMoveAction' :: MapArray -> ProblemState -> Orientation -> Int -> Robot -> ([I2], Robot)
+applyMoveAction' map_ state action 0 r = ([], r)
 applyMoveAction' map_ state action remainingSteps r =
     let newPos =  move (robotPosition r) action
         newDrilled = S.union (robotDrilled r) $
@@ -221,18 +222,17 @@ applyMoveAction' map_ state action remainingSteps r =
                 then S.fromList $ filter (\p -> not $ checkMapObstacle map_ p) [newPos]
                 else S.empty
         possibleRobot = r { robotPosition = newPos, robotDrilled = newDrilled }
-        (_, nextRobot) = applyMoveAction' map_ state action (remainingSteps-1) possibleRobot
+        (nextPath, nextRobot) = applyMoveAction' map_ state action (remainingSteps-1) possibleRobot
     in if validRobot map_ possibleRobot
-       then (True, nextRobot)
-       else (False, r)
+       then (newPos : nextPath, nextRobot)
+       else ([], r)
 
-applyMoveAction :: MapArray -> ProblemState -> Orientation -> Maybe Robot
+applyMoveAction :: MapArray -> ProblemState -> Orientation -> Maybe ([I2], Robot)
 applyMoveAction map_ state@(ProblemState {..}) action = 
-    let (moved, newRobot) = applyMoveAction' map_ state action (speed problemRobot) problemRobot
-    in
-      if moved
-      then Just newRobot
-      else Nothing
+    let (path, newRobot) = applyMoveAction' map_ state action (speed problemRobot) problemRobot
+    in if null path
+       then Nothing
+       else Just (path, newRobot)
 
 useBooster :: Booster -> Robot -> Maybe Robot
 useBooster booster r =
@@ -241,37 +241,37 @@ useBooster booster r =
     Just n -> Just r { robotBoosters = M.insert booster (n - 1) $ robotBoosters r }
     Nothing -> Nothing
 
-applyAction ::  MapArray -> ProblemState -> Action -> Maybe Robot
-applyAction map_ state@(ProblemState { problemRobot = r }) action = decrementBoosters <$> newRobot
+applyAction ::  MapArray -> ProblemState -> Action -> Maybe ([I2], Robot)
+applyAction map_ state@(ProblemState { problemRobot = r }) action = second decrementBoosters <$> newRobot
   where newRobot =
           case action of
-            MNothing -> Just r
+            MNothing -> Just ([], r)
             MUp -> applyMoveAction map_ state N
             MDown -> applyMoveAction map_ state S
             MLeft -> applyMoveAction map_ state W
             MRight -> applyMoveAction map_ state E
-            MTurnRight -> Just $ applyRotAction r R
-            MTurnLeft -> Just $ applyRotAction r L
+            MTurnRight -> Just ([robotPosition r], applyRotAction r R)
+            MTurnLeft -> Just ([robotPosition r], applyRotAction r L)
             MAttachManipulator m ->
-              let applyAttach r' = r' { robotManipulators = S.insert m $ robotManipulators r }
+              let applyAttach r' = ([robotPosition r], r' { robotManipulators = S.insert m $ robotManipulators r })
               in if not $ S.member m $ robotManipulators r
                  then applyAttach <$> useBooster Extension r
                  else Nothing
             MAttachWheels ->
-              let applyAttach r' = r' { robotWheelsLeft = 50 + max 1 (robotWheelsLeft r) }
+              let applyAttach r' = ([], r' { robotWheelsLeft = 50 + max 1 (robotWheelsLeft r) })
               in applyAttach <$> useBooster FastWheels r
             MAttachDrill ->
-              let applyAttach r' = r' { robotDrillLeft = 30 + max 1 (robotDrillLeft r) }
+              let applyAttach r' = ([], r' { robotDrillLeft = 30 + max 1 (robotDrillLeft r) })
               in applyAttach <$> useBooster Drill r
             MPlaceBeacon ->
-              let applyAttach r' = r' { robotBeacons = S.insert bpos $ robotBeacons r }
+              let applyAttach r' = ([], r' { robotBeacons = S.insert bpos $ robotBeacons r })
                   bpos = robotPosition r
               in if not $ S.member bpos $ robotBeacons r
                  then applyAttach <$> useBooster Teleport r
                  else Nothing
             MTeleport b ->
               if S.member b $ robotBeacons r
-              then Just r { robotPosition = b }
+              then Just ([b], r { robotPosition = b })
               else Nothing
 
 
