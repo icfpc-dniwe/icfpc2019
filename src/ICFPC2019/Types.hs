@@ -43,6 +43,7 @@ data Robot = Robot { robotPosition :: !I2
                    , robotBeacons :: !(Set I2)
                    , robotDrillLeft :: !Int
                    , robotWheelsLeft :: !Int
+                   , robotOrientation :: !Orientation
                    }
              deriving (Show, Eq, Ord, Generic)
 

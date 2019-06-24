@@ -204,6 +204,7 @@ decrementBoosters r =
 applyRotAction :: Robot -> Rotation -> Robot
 applyRotAction r action =
   r { robotManipulators = S.fromList $ map (`rot` action) $ S.toList $ robotManipulators r
+    , robotOrientation = rotateOrientation action $ robotOrientation r
     }
 
 validRobot :: MapArray -> ProblemState -> Robot -> Bool

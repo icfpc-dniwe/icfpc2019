@@ -3,6 +3,7 @@ module ICFPC2019.Solver.Utils where
 import Data.Maybe
 import Data.List
 import Data.Ord
+import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Data.Array.Repa as R
 import qualified Data.HashMap.Strict as M
@@ -79,13 +80,29 @@ getAllMoveActions' problem@Problem {..} state@ProblemState {..} =
 getAllMoveActions :: Problem -> ProblemState -> [Action]
 getAllMoveActions problem state = getAllMoveActions' problem state
 
+addUpDown :: Set I2 -> [I2]
+addUpDown pts = [V2 xMin (yMin - 1), V2 xMax (yMax + 1)]
+  where (V2 xMin yMin) = minimumBy (comparing $ \(V2 _ y) -> y) $ S.toList pts
+        (V2 xMax yMax) = maximumBy (comparing $ \(V2 _ y) -> y) $ S.toList pts
+
+addLeftRight :: Set I2 -> [I2]
+addLeftRight pts = [V2 (xMin - 1) yMin, V2 (xMax + 1) yMax]
+  where (V2 xMin yMin) = minimumBy (comparing $ \(V2 x _) -> x) $ S.toList pts
+        (V2 xMax yMax) = maximumBy (comparing $ \(V2 x _) -> x) $ S.toList pts
+
+optimizedExtension :: Orientation -> Set I2 -> [I2]
+optimizedExtension E = addUpDown
+optimizedExtension W = addUpDown
+optimizedExtension N = addLeftRight
+optimizedExtension S = addLeftRight
+
 getAllActions :: Problem -> ProblemState -> [Action]
 getAllActions problem@Problem {..} state@ProblemState {..} =
   let robot = problemRobot
       moves = getAllMoveActions' problem state
   in moves
      ++ [MTurnRight, MTurnLeft, MPlaceBeacon]
-     ++ (MAttachManipulator <$> (S.toList $ manipulatorExtensionLocations $ robotManipulators robot))
+     ++ (MAttachManipulator <$> (optimizedExtension (robotOrientation robot) $ robotManipulators robot))
 
 getNeighboursOfType :: Problem -> ProblemState -> [Action] -> [(ProblemState, Action)]
 getNeighboursOfType problem state = mapMaybe tryMove
